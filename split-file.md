@@ -229,9 +229,12 @@ Rules:
 
 ---
 
-### 7.8 Reachability Check
-- All moved functions are still used
-- No dead code introduced
+### 7.8 Reachability & Circular Dependency Check (CRITICAL)
+- All moved functions are still used; no dead code introduced.
+- **Zero Circular Dependencies:** Ensure extracted files do not import each other (`A -> B -> A`). If mutual dependency exists, extract shared interfaces/types into a dedicated `types.ts` or `shared/` module.
+- **Barrel Exports & Public Contracts:** Update or maintain existing barrel files (`index.ts`) so external callers and test imports do not break.
+- **Server/Client Boundary & Secret Leak Safety:** In fullstack frameworks (Next.js, Remix), never import server-only logic, database clients, or environment secrets into client-rendered (`"use client"`) components.
+- **CSS Cascade & DOM Hierarchy:** Ensure extracted sub-components retain CSS specificity, flex/grid parent-child relationships, and Tailwind class priority without visual regressions.
 
 ---
 

@@ -6,42 +6,23 @@ description: 🔍 Deep codebase understanding workflow. Use to investigate archi
 
 $ARGUMENTS
 
----
+## Purpose & Core Rule
 
-## Purpose
+Activates ANALYZE mode for deep code comprehension before implementation, refactoring, debugging, or review.
 
-This command activates ANALYZE mode for deep understanding before implementation, refactoring, debugging, or review.
+> **ANALYZE = UNDERSTAND FIRST, CHANGE NOTHING UNLESS EXPLICITLY ASKED**
 
-Use it when the priority is to understand how the system currently works before touching code.
-
----
-
-## Why This Exists
-
-Many mistakes happen because implementation starts too early:
-
-- Wrong file edited because the real entry point was not identified
-- Bug fixed at symptom level while root cause lives elsewhere
-- Refactor breaks behavior because hidden dependencies were missed
-- Feature work duplicates existing logic already present in another module
-- Review feedback is shallow because architecture and data flow were not traced
-
-`/analyze` exists to slow down assumptions and speed up correct decisions.
+- Trace execution flows and gather empirical evidence.
+- Map boundaries, dependencies, and state transitions.
+- Identify risks and explicitly state remaining unknowns.
+- **Strictly read-only:** Do NOT implement fixes, refactors, or features unless explicitly requested in a subsequent turn.
 
 ---
 
-## When To Use
+## When to Use
 
-Use `/analyze` when:
-
-- The codebase is unfamiliar
-- The task touches multiple files or layers
-- You need to understand feature behavior before changing it
-- A bug is hard to reproduce or root cause is unclear
-- You want to map architecture, module boundaries, or data flow
-- You need confidence before using `/enhance`, `/debug`, `/refactor`, `/review`, or `/security`
-
-Do **not** use `/analyze` as the default for tiny edits that are already obvious.
+- **Use when:** Unfamiliar codebase, multi-file/multi-layer changes, hard-to-reproduce bugs, mapping architecture/data flow, or preparing for `/enhance`, `/debug`, `/refactor`, `/review`, or `/security`.
+- **Do not use:** Obvious single-line or localized edits.
 
 ---
 
@@ -61,491 +42,152 @@ Do **not** use `/analyze` as the default for tiny edits that are already obvious
 
 ---
 
-## Core Rule
-
-> **ANALYZE = UNDERSTAND FIRST, CHANGE NOTHING UNLESS EXPLICITLY ASKED**
-
-Default behavior:
-
-- Read code
-- Trace behavior
-- Gather evidence
-- Summarize findings
-- Identify unknowns and risks
-
-Do **not** implement fixes, refactors, or new features unless the user explicitly asks for that as a second step.
-
----
-
-## Primary Goals
-
-When `/analyze` is triggered, the assistant should answer as many of these as possible:
-
-1. What does this part of the system do?
-2. Where does execution begin?
-3. Which files, modules, routes, services, and components are involved?
-4. How does data move through the system?
-5. What state is read, transformed, persisted, or cached?
-6. What are the dependencies and side effects?
-7. What assumptions does the current code make?
-8. What risks exist if we change this area?
-9. What is still unknown after investigation?
-10. What should be changed next, if anything?
-
----
-
 ## Investigation Depth Levels
 
-Choose the smallest level that fully answers the user request.
-
-### Level 1: Surface Scan
-
-Use for:
-
-- quick orientation
-- file discovery
-- locating entry points
-- identifying relevant modules
-
-Deliverables:
-
-- relevant file list
-- top-level architecture guess based on evidence
-- next recommended reads
-
-### Level 2: Flow Trace
-
-Use for:
-
-- feature understanding
-- bug reproduction tracing
-- request/response path mapping
-- component/service/store interaction analysis
-
-Deliverables:
-
-- execution path
-- data flow
-- control flow
-- side effects
-- likely risk points
-
-### Level 3: Deep System Analysis
-
-Use for:
-
-- large refactors
-- architecture validation
-- fragile legacy code
-- unclear ownership or hidden coupling
-- performance or reliability investigation
-
-Deliverables:
-
-- full subsystem map
-- module boundaries
-- dependency map
-- invariants
-- hotspots
-- refactor or redesign guidance
+| Level | Scope | Deliverables |
+| :--- | :--- | :--- |
+| **Level 1: Surface Scan** | Quick orientation, file discovery, entry points | Relevant files list, top-level architecture overview, recommended next reads |
+| **Level 2: Flow Trace** | Feature understanding, bug tracing, request/response paths | End-to-end execution path, data/control flow, side effects, risk points |
+| **Level 3: Deep System Analysis** | Subsystems, large refactors, legacy code, hidden coupling | Full component/domain map, dependency directions, invariants, hotspots, redesign guidance |
 
 ---
 
 ## Analysis Protocol
 
-Follow this order unless evidence shows a better path.
+### Phase 1: Clarify Scope & Objectives
+- Identify target feature, bug, or module. Infer most likely scope if vague and declare assumptions.
 
-### Phase 1: Clarify Scope
-
-Identify:
-
-- Target feature, bug, module, or question
-- Expected outcome of the analysis
-- Whether user wants breadth or depth
-
-If the request is vague, infer the most likely scope from the user prompt and state the assumption.
-
-### Phase 2: Find Entry Points
-
-Locate where the target behavior begins:
-
-- route definitions
-- page/component entry
-- API handlers
-- CLI commands
-- job schedulers
-- event listeners
-- exported public functions
-
-Questions to answer:
-
-- What initiates this flow?
-- Is there more than one entry point?
-- Which path is primary vs fallback?
+### Phase 2: Locate Entry Points
+- Identify starting points: routes, UI components, API handlers, CLI commands, workers, event listeners, or exported functions.
+- Determine if multiple or fallback entry points exist.
 
 ### Phase 3: Map the Execution Chain
+- Trace callers, callees, service boundaries, hooks/stores, middleware, database queries, and async jobs.
+- Record file, symbol, role, incoming, and outgoing dependencies at each hop.
+- **Dynamic & Magic Resolution:** Uncover indirect invocations via Dependency Injection (IoC containers), dynamic reflection, event emitters/subscribers, and GraphQL dynamic schema resolvers.
 
-Trace outward from the entry point:
+### Phase 4: Understand Data & State Flow
+- Track inputs, validation, transformation, caching, persistence, and UI/API outputs.
+- Identify nullable fields, implicit defaults, race conditions, and synchronization issues.
 
-- imports and exports
-- function calls
-- service boundaries
-- hooks and stores
-- middleware and interceptors
-- database queries
-- external APIs
-- async jobs
+### Phase 5: Identify Constraints & Invariants
+- Uncover business rules, auth gates, idempotency guarantees, schema assumptions, and required execution order. (Label inferred rules clearly).
 
-At each step, capture:
+### Phase 6: Surface Risks & Unknowns
+- Flag fragile coupling, dead code, duplicated logic, hidden side effects, missing validations/tests, and unproven hypotheses.
 
-- file
-- symbol
-- role
-- incoming dependency
-- outgoing dependency
-
-### Phase 4: Understand Data and State
-
-Track:
-
-- inputs
-- validation
-- transformation
-- persistence
-- caching
-- derived state
-- error states
-- loading states
-
-Look for:
-
-- schema assumptions
-- nullable fields
-- implicit defaults
-- duplicated transformations
-- state synchronization issues
-
-### Phase 5: Identify Constraints and Invariants
-
-Find rules the system appears to rely on:
-
-- authentication required before access
-- IDs must exist before update
-- feature flags gate behavior
-- request must pass validation before persistence
-- UI assumes store is hydrated
-- retry logic assumes idempotent side effects
-
-If an invariant is only inferred, mark it clearly as an inference.
-
-### Phase 6: Find Risks and Unknowns
-
-List:
-
-- fragile coupling
-- dead code suspicion
-- duplicated logic
-- hidden side effects
-- race conditions
-- missing validation
-- missing tests
-- configuration dependence
-- environment dependence
-
-Also list what is still not proven.
-
-### Phase 7: Recommend Next Step
-
-Choose the best follow-up workflow:
-
-- `/debug` for root cause isolation and fix
-- `/enhance` for adding behavior
-- `/refactor` for structure cleanup without behavior change
-- `/review` for quality/risk assessment
-- `/security` for threat-focused audit
-- `/test` for coverage generation or validation
+### Phase 7: Recommend Next Steps
+- Select the next best workflow (`/debug`, `/enhance`, `/refactor`, `/review`, `/security`, `/test`).
 
 ---
 
-## Reading Strategy
+## Reading Strategy & Evidence Checklist
 
-Prefer evidence over guesses.
+**Read Order:** Entry points → Immediate callees/imports → Shared types/schemas → State/store modules → Services/data layer → Tests → Config.
 
-### Read Order
+**Stop Expanding When:** Execution path, data flow, and side effects are proven, and unread branches are out of scope.
 
-1. Entry points
-2. Immediate imports/callees
-3. Shared types/interfaces/schemas
-4. State/store/context modules
-5. Service/repository/data access layer
-6. Related tests
-7. Config files only if they affect behavior
-
-### For Large Files
-
-If a file is large:
-
-- read the relevant section first
-- expand only around referenced symbols
-- read full file only when local context is insufficient
-
-### Stop Expanding When
-
-Stop reading deeper when all are true:
-
-- execution path is clear
-- data flow is clear
-- side effects are identified
-- remaining branches are out of scope
+| Area | Key Verification Questions |
+| :--- | :--- |
+| **Entry Point** | Where does the flow begin? |
+| **Ownership** | Which module owns the business logic? |
+| **Dependencies** | What does it rely on or call? |
+| **State & Data** | What state/schema enters, transforms, and exits? |
+| **Side Effects** | DB writes, network calls, cache mutations, logs, emitted events? |
+| **Errors & Tests** | How are failures handled? What behavior is covered by tests? |
+| **Risks** | What breaks if this area is modified? |
 
 ---
 
-## Evidence Checklist
+## Heuristics by Problem Type
 
-During analysis, gather concrete evidence for each area that matters:
-
-| Area | Questions |
-|------|-----------|
-| Entry Point | Where does the flow begin? |
-| Ownership | Which module owns the logic? |
-| Dependencies | What does it call or rely on? |
-| State | What state is read/written? |
-| Data | What shape enters and exits? |
-| Side Effects | DB, network, storage, logs, cache, events? |
-| Errors | How are failures handled? |
-| Tests | What behavior is already covered? |
-| Config | What flags/env/settings change behavior? |
-| Risk | What is easy to break? |
+- **Feature Flow:** Focus on UI entry, service calls, API contracts, store updates, and feature flags.
+- **Bug Diagnosis:** Focus on reproduction path, input/output drift, swallowed errors, and fallback branches.
+- **Refactor Prep:** Focus on module boundaries, duplicated logic, public APIs, and consumers.
+- **Architecture:** Focus on layer boundaries, dependency direction, circular coupling, and domain leaks.
+- **Performance:** Focus on repeated computation, hot loops, heavy renders, N+1 queries, and cache misses.
 
 ---
 
-## Heuristics By Problem Type
+## Anti-Patterns to Avoid
 
-### Feature Understanding
-
-Focus on:
-
-- route/component entry
-- UI to service flow
-- API contracts
-- store/state ownership
-- feature flags
-- related tests
-
-### Bug Investigation Prep
-
-Focus on:
-
-- reproduction path
-- recent change surface
-- input/output mismatch
-- silent failure points
-- error swallowing
-- retry or fallback behavior
-
-### Refactor Prep
-
-Focus on:
-
-- module responsibilities
-- duplicated logic
-- layering violations
-- public API surfaces
-- hidden consumers
-- behavior-preserving boundaries
-
-### Architecture Analysis
-
-Focus on:
-
-- layer boundaries
-- dependency direction
-- domain ownership
-- circular coupling
-- shared utilities abuse
-- policy vs implementation separation
-
-### Performance Analysis Prep
-
-Focus on:
-
-- repeated work
-- heavy renders
-- unnecessary queries
-- N+1 patterns
-- cache misses
-- synchronous bottlenecks
+- Inferring behavior from file names or folder structure alone.
+- Stopping at the first plausible file without tracing callers.
+- Believing comments without verifying code implementation.
+- Recommending edits before mapping dependencies.
+- Presenting unverified speculation as established fact.
 
 ---
 
-## Anti-Patterns To Avoid
+## Output Formats
 
-Do not:
-
-- assume behavior from file names alone
-- stop after finding the first plausible file
-- treat comments as proof without checking implementation
-- infer architecture from folder structure only
-- recommend changes before tracing dependencies
-- confuse usage sites with ownership sites
-- ignore tests when trying to understand intended behavior
-- present speculation as fact
-
----
-
-## Output Format
+### Standard Format
 
 ```markdown
 ## 🔬 Analysis Report: [Topic]
 
-### Scope
-- Target: [feature/module/question]
-- Depth: Surface Scan | Flow Trace | Deep System Analysis
-- Goal: [what this analysis is trying to answer]
+### Scope & Executive Summary
+- **Target & Depth:** [Target area] | [Level 1 / 2 / 3]
+- **Summary:** [Concise paragraph on how this flow currently functions]
 
-### Executive Summary
-[1 short paragraph explaining how this part currently works]
+### Relevant Files & Roles
+| File | Role / Responsibility |
+| :--- | :--- |
+| `src/...` | [Entry / Logic / State / Persistence] |
 
-### Relevant Files
-| File | Role |
-|------|------|
-| `src/...` | Entry point |
-| `src/...` | Business logic |
-| `src/...` | Persistence |
+### Execution & Data Flow
+1. **Entry:** [Trigger point]
+2. **Chain:** [Step-by-step caller -> callee sequence]
+3. **Data Transformations:** [Input -> Validation -> State/DB -> Output]
 
-### Execution Flow
-1. [Where flow starts]
-2. [What calls what]
-3. [Where state/data changes]
-4. [Where result is returned or rendered]
+### Key Findings & Invariants
+- **Observed (Facts):** [Evidence grounded in code]
+- **Inferred (Hypotheses):** [Carefully labeled deductions]
+- **Invariants:** [Assumptions and rules the code relies on]
 
-### Data / State Flow
-- Input: [source]
-- Validation: [where/how]
-- Transformation: [where/how]
-- Persistence or side effect: [db/api/cache/log/event]
-- Output: [UI/API/result]
-
-### Key Findings
-1. **Observed:** [fact grounded in code]
-2. **Observed:** [fact grounded in code]
-3. **Inferred:** [carefully labeled inference]
-
-### Constraints / Invariants
-- [rule the system appears to rely on]
-- [another rule]
-
-### Risks
-- [fragile dependency or change risk]
-- [hidden coupling or missing coverage]
-
-### Unknowns
-- [what still cannot be proven from current evidence]
+### Risks & Unknowns
+- **Risks:** [Coupling, race conditions, edge cases]
+- **Unknowns:** [What remains unproven without runtime/logs]
 
 ### Recommended Next Step
-- Use `/debug` to isolate root cause in [area]
-- Use `/refactor` to separate [concern] from [concern]
-- Use `/test` to add coverage around [behavior]
+- `/debug` | `/enhance` | `/refactor` | `/test` | `/review` with exact focus area
 ```
 
----
-
-## Short Output Format
-
-For small requests, use a condensed version:
+### Short Format
 
 ```markdown
 ## 🔬 Analysis: [Topic]
-
-- Entry point: `...`
-- Main files: `...`, `...`, `...`
-- Current flow: [one paragraph]
-- Main risk: [one line]
-- Next best step: `/debug` | `/enhance` | `/refactor` | `/test`
+- **Entry Point:** `path/to/entry`
+- **Key Files:** `fileA`, `fileB`
+- **Execution Flow:** [Brief 1-paragraph summary]
+- **Primary Risk:** [Key vulnerability or coupling]
+- **Next Step:** `/workflow [args]`
 ```
 
 ---
 
-## Confidence Labels
+## Confidence & Escalation
 
-When useful, label conclusions with confidence:
-
-- **High confidence**: directly confirmed by code path or test
-- **Medium confidence**: strongly supported but not fully proven end-to-end
-- **Low confidence**: plausible inference requiring more evidence
-
-Never hide uncertainty when tracing incomplete or dynamic flows.
-
----
-
-## Escalation Rules
-
-Escalate depth if any of these appear:
-
-- multiple entry points for the same behavior
-- shared utility with many callers
-- dynamic imports or plugin loading
-- heavy config-driven behavior
-- inconsistent naming across layers
-- test behavior contradicts implementation
-- side effects hidden behind wrappers
-- legacy code with unclear ownership
-
-If confidence stays low after reasonable reading, stop and report unknowns instead of pretending certainty.
+- **Confidence Labels:** Tag findings as **High** (confirmed by code/tests), **Medium** (strongly supported), or **Low** (plausible inference).
+- **Escalate Depth when:** Encountering multiple entry points, dynamic imports, plugin architectures, conflicting tests vs code, or hidden side effects.
 
 ---
 
 ## Handoff Matrix
 
-After `/analyze`, choose the next workflow intentionally:
-
-| Next Need | Workflow |
-|-----------|----------|
-| Fix a proven problem | `/debug` |
-| Add capability | `/enhance` |
-| Build from scratch | `/create` |
-| Improve structure only | `/refactor` |
-| Validate correctness | `/test` |
-| Audit quality and risks | `/review` |
-| Investigate attack surface | `/security` |
-| Prepare multi-agent execution | `/orchestrate` |
+| Target Goal | Next Workflow |
+| :--- | :--- |
+| Fix a diagnosed bug | `/debug` |
+| Add new features | `/enhance` |
+| Improve structure without behavior change | `/refactor` |
+| Add/audit test coverage | `/test` or `/test-audit` |
+| Code quality or security audit | `/review` or `/security` |
 
 ---
 
-## Example Prompts
+## Definition of Done
 
-```text
-/analyze authentication flow from login form to session storage
-/analyze why invoice status can become inconsistent
-/analyze checkout architecture before refactor
-/analyze dashboard data loading and caching
-/analyze how notifications are triggered
-/analyze admin permission model
-/analyze upload pipeline and failure points
-```
-
----
-
-## Definition Of Done
-
-`/analyze` is complete only when:
-
-- relevant entry point is identified
-- main execution path is traced
-- key files are mapped
-- data or state flow is described
-- risks and unknowns are listed separately
-- speculation is labeled as inference
-- a sensible next workflow is recommended
-
-If these are not complete, analysis is not done yet.
-
----
-
-## Final Rule
-
-Be rigorous, not noisy.
-
-The goal is not to read the entire repository.
-
-The goal is to understand the target area deeply enough that the next action is based on evidence, not intuition.
+1. Relevant entry point and primary execution path mapped.
+2. Key files, dependencies, and state transitions documented.
+3. Invariants, risks, and unknowns explicitly separated.
+4. Concrete next workflow recommended.

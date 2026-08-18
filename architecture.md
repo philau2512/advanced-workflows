@@ -23,7 +23,8 @@ Use it when the goal is to understand, enforce, or evolve module boundaries, dep
 Default behavior:
 
 - map the current architecture from evidence
-- identify boundary violations and coupling hotspots
+- identify boundary violations, circular dependency chains, and coupling hotspots
+- track async event choreography, message bus flows, and dynamic IoC wiring
 - distinguish design intent from implementation drift
 - recommend the smallest structural change that improves integrity
 - avoid architecture theater
