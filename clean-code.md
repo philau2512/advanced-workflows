@@ -33,22 +33,27 @@ Audit maintainability issues with evidence and apply the smallest safe, behavior
 
 ---
 
-## Clean-Code Audit Dimensions (14 Key Areas)
+## Clean-Code Audit Dimensions (16 Key Areas)
 
 1. **Naming & Intent:** Flag misleading names, ambiguous abbreviations, or generic names (`data`, `temp`, `handle`) hiding side effects.
-2. **Functions & Methods:** Flag monolithic responsibilities, deep nesting, boolean flag arguments, or excessive parameter clusters.
-3. **Harmful Duplication:** Flag repeated business logic, validation rules, or pricing algorithms. *(Note: Do not abstract coincidental similarity).*
+2. **Functions & Methods:** Flag monolithic responsibilities, deep nesting, boolean flag arguments, or excessive parameter clusters (>3 params -> use Options/DTO object).
+3. **Harmful Duplication (DRY):** Flag repeated business logic, validation rules, or pricing algorithms. *(Note: Do not abstract coincidental similarity).*
 4. **Complexity & Branching:** Simplify deep indentation, hidden state machines, and confusing boolean logic with guard clauses and explicit flow.
 5. **Cohesion & Coupling:** Enforce single responsibility; flag UI mixing with SQL/API calls or circular dependencies.
-6. **Abstraction Quality:** Remove 1-use wrappers and speculative factories (over-abstraction); consolidate repeated protocol orchestration (under-abstraction).
+6. **Abstraction Quality (YAGNI & KISS):** Remove 1-use wrappers and speculative factories (over-abstraction); consolidate repeated protocol orchestration (under-abstraction).
 7. **Error Handling:** Fix swallowed exceptions, loss of error context, and inconsistent error translations.
 8. **State & Side Effects:** Make hidden mutations, implicit cache writes, and ordering-sensitive state updates explicit.
 9. **Dead Code:** Remove unreferenced private helpers, stale feature flags, and commented-out blocks. *(Preserve exported symbols).*
 10. **Comments Quality:** Keep rationale ("why"); remove comments narrating obvious syntax or compensating for bad naming.
-11. **Constants & Magic Values:** Extract domain thresholds, timeouts, and business numbers; avoid extracting self-explanatory literals.
-12. **Data Transformations:** Centralize DTO ↔ Domain ↔ DB mappings with clear domain owners.
-13. **Testability:** Decouple hard dependencies (clocks, network, globals) only when it clarifies ownership.
-14. **Frontend & Backend Specifics:**
+11. **Constants, Variables Scope & Placement:**
+    - *Colocation & Scope:* Declare variables/constants as close as possible to their usage site (Colocation Principle); avoid global/module-level variables when local function scope is sufficient.
+    - *Constants Placement:* Place domain/configuration constants at the top of the file or extract them into a dedicated `constants.ts`/config module instead of scattering them inside function bodies.
+    - *Magic Values:* Extract business thresholds, timeouts, and status codes into clearly named constants (UPPER_SNAKE_CASE).
+12. **Data Transformations & Immutability:** Centralize DTO ↔ Domain ↔ DB mappings with clear domain owners. Avoid mutating function input arguments directly (prefer pure transformations / immutability).
+13. **Command-Query Separation (CQS):** Strictly separate data query functions (Query - pure, no side effects) from state mutation functions (Command - DB writes, event dispatching).
+14. **Type-Safety & Nullability:** Enforce strict null/undefined checks (`Optional chaining`, `Nullish coalescing ??`), eliminate defensive `as any` type casting.
+15. **Testability:** Decouple hard dependencies (clocks, network, globals) only when it clarifies ownership.
+16. **Frontend & Backend Specifics:**
     - *FE:* Prune prop drilling, giant components, and redundant state derivation.
     - *BE:* Enforce trust boundary validation, transaction scopes, and separate transport from domain logic.
 
