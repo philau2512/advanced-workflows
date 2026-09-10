@@ -1,8 +1,9 @@
 ---
-description: ⚡ Disciplined phase-by-phase implementation engine that executes technical plans with incremental verification gates, status mutations, and strict scope confinement.
+description: ⚡ Phased Implementation & Autonomous Delivery Engine. Execute technical plans with strict test gates, or run end-to-end autonomous loops with --vibe.
+argument-hint: "[plan-path] [--vibe <task>] [--auto] [--phase <N>] [--tdd] [--no-test]"
 ---
 
-# /cook - Phase-by-Phase Plan Execution & Implementation Mode
+# /cook - Phased Implementation & Delivery Engine
 
 $ARGUMENTS
 
@@ -10,133 +11,121 @@ $ARGUMENTS
 
 ## 🎯 Purpose & Core Principles
 
-Activates **IMPLEMENTATION MODE** to systematically execute technical plans (both multi-phase directories and standalone plans) with strict phase-by-phase discipline, automated testing gates, and progress tracking.
+Activates **IMPLEMENTATION MODE** to systematically execute technical plans with disciplined phase sequencing, automated verification gates, and atomic edits. Can also run end-to-end autonomous delivery via `--vibe`.
 
 > **IRON INVARIANTS:**
-> 1. **STRICT PHASE SEQUENCING:** Execute ONE phase at a time. NEVER merge multiple phases into a single unverified turn.
-> 2. **STRICT SCOPE CONFINEMENT:** Touch ONLY the files enumerated in the active phase's `Affected Files` list. Zero unrelated edits.
-> 3. **INCREMENTAL VERIFICATION GATE:** A phase is NOT complete until its specific `Test Command` runs and passes 100%. No moving forward on red tests.
-> 4. **DURABLE STATUS MUTATION:** Update the phase file frontmatter (`status: in-progress` $\rightarrow$ `status: completed`) and the master `plan.md` index table upon completion.
-> 5. **NATIVE TOOLING ONLY:** NEVER use terminal commands (`echo`, `cat >`, redirection) to edit files. ALWAYS use native IDE editing tools (`replace_file_content`, `write_to_file`).
+> 1. **STRICT PHASE SEQUENCING:** Execute ONE phase at a time. Never mix multiple phases into a single unverified turn.
+> 2. **STRICT SCOPE CONFINEMENT:** Touch ONLY the files enumerated in the active phase's affected files list. Zero unrelated refactoring or cleanup.
+> 3. **INCREMENTAL VERIFICATION GATE:** A phase is NOT complete until its declared test command passes 100%. Never advance on red tests.
+> 4. **DEADLOCK PROTECTION (MAX 3 ATTEMPTS):** If a test gate fails, auto-retry targeted fixes at most 3 times. If still failing, STOP and report the blocker to the user. Never loop indefinitely.
+> 5. **DURABLE STATUS TRACKING:** Mutate phase status (`status: pending -> in-progress -> completed`) in both the phase file and the master `plan.md` index upon verification.
+> 6. **NATIVE TOOLING ONLY:** NEVER use terminal commands (`echo`, `cat >`, redirection) to edit files. ALWAYS use native IDE tools (`replace_file_content`, `write_to_file`).
 
 ---
 
-## ⚙️ Argument Parsing & Execution Flags
+## ⚙️ Argument Parsing & Usage Modes
 
-- `--auto`: Automatically proceed through all pending phases sequentially as long as test gates pass.
-- `--phase <N>`: Target and execute ONLY Phase N (e.g. `/cook --phase 2 plans/20260820-user-auth`).
-- `--tdd`: Enforce test-first authoring (write failing tests before business logic).
-- `--no-test`: Skip automated test execution (surfaces warning in final report).
-- `$ARGUMENTS`: Path to a plan directory (`plans/<slug>/`), a specific phase file (`phase-02.md`), or a standalone plan (`implementation_plan.md`).
+```text
+# Standard Phased Execution (Targeting existing plan):
+/cook [path/to/plan.md or plans/slug/] [--auto] [--phase <N>] [--tdd]
+
+# Autonomous Pipeline Mode (End-to-end Idea -> Plan -> Cook -> Verify):
+/cook --vibe "<feature description or task>" [--fast] [--tdd]
+```
+
+### Flags:
+- `--vibe`: Activates the autonomous pipeline: triggers `/brainstorm` -> `/plan` -> pre-flight validate -> runs `/cook --auto` sequentially.
+- `--auto`: Automatically loops through all pending phases in the plan as long as tests pass.
+- `--phase <N>`: Executes only Phase N (e.g. `/cook --phase 2 plans/20260910-user-auth/`).
+- `--tdd`: Enforces test-first authoring (writes failing characterization tests before editing business logic).
+- `--no-test`: Skips automated test execution (must be explicitly declared; surfaces warning in report).
 
 ---
 
-## 🔬 5-Step Execution Protocol
+## 🔬 Mode A: Phased Implementation Protocol (Default)
 
 ```
 ┌────────────────────────┐     ┌────────────────────────┐     ┌────────────────────────┐
-│ 1. RESOLVE TARGET      │ ──► │ 2. READ PHASE SPEC     │ ──► │ 3. IMPLEMENT CODE      │
-│    Plan & Active Phase │     │    (Affected Files)    │     │    (Strict Scope Only) │
+│ 1. Resolve Target Plan │ ──► │ 2. Read Phase Spec     │ ──► │ 3. Implement Code      │
+│    & Pre-Flight Check  │     │    (Target Files Only) │     │    (Atomic Scope)      │
 └────────────────────────┘     └────────────────────────┘     └───────────┬────────────┘
                                                                           │
 ┌────────────────────────┐     ┌────────────────────────┐                 ▼
-│ 5. UPDATE STATUS       │ ◄── │ 4. RUN TEST GATE       │ ◄────────────────────────┘
-│    & Next Phase Handoff│     │    (Incremental Check) │
+│ 5. Update Plan Status  │ ◄── │ 4. Run Test Gate       │ ◄────────────────────────┘
+│    & Next Phase Handoff│     │    (100% Green Required)│
 └────────────────────────┘     └────────────────────────┘
 ```
 
----
+### Step 1: Target Resolution & Pre-Flight Check
+1. Resolve input:
+   - If argument is a plan directory (e.g. `plans/<slug>/`) -> Find the first phase with `status: pending`.
+   - If argument is a specific phase file (e.g. `phase-02.md`) -> Target this exact phase.
+   - If argument is empty -> Check workspace for `implementation_plan.md` or latest active plan in `plans/`.
+2. **Pre-Flight Sanity Gate:** Verify that all target files in the phase exist or are explicitly tagged as `[NEW]`.
+3. Mark active phase as `status: in-progress` in frontmatter and master `plan.md`.
 
-### Step 1: Target Resolution & Plan Discovery
+### Step 2: Implementation & Scope Confinement
+- Read the active phase specifications: affected files, new signatures, required imports.
+- Make targeted edits using native IDE tools (`replace_file_content`, `write_to_file`).
+- Preserve existing code patterns, logging formats, and strong typing. Do not touch out-of-scope files.
 
-1. **Detect Input Type:**
-   - **Plan Directory:** (e.g. `plans/<slug>/`) $\rightarrow$ Read `plan.md` to identify the first phase with `status: pending` (or the phase specified by `--phase <N>`).
-   - **Specific Phase File:** (e.g. `plans/<slug>/phase-02-services.md`) $\rightarrow$ Execute this exact phase.
-   - **Single Standalone Plan:** (e.g. `implementation_plan.md`) $\rightarrow$ Execute the plan sections in logical order.
-2. **If no path is provided:**
-   - Check `plans/` for the latest in-progress plan or check for `implementation_plan.md` in workspace root.
+### Step 3: Incremental Verification Gate & Deadlock Guard
+- Execute the phase's designated test command (e.g. `npx vitest run tests/unit/order.test.ts`).
+- If tests **FAIL**:
+  1. Analyze the exact assertion failure.
+  2. Apply immediate targeted fix within the current phase scope.
+  3. Re-run test command.
+  4. **Loop Protection:** Limit to **maximum 3 fix attempts**. If tests remain red after attempt 3, halt execution, preserve modified files, and prompt the user with diagnostic logs.
+- Never advance to the next phase while tests are red.
 
----
-
-### Step 2: Read Phase Specification & Context Check
-
-1. **Read the active phase file completely** (e.g. `phase-01-types.md`).
-2. **Extract Target Touchpoints:**
-   - List of `[NEW]` files to create.
-   - List of `[MODIFY]` files to update.
-   - Specific contract/signature changes and acceptance criteria.
-3. **Mark Status in Progress:**
-   - Update frontmatter in the phase file: `status: in-progress`.
-
----
-
-### Step 3: Implement Code (Strict Scope Confinement)
-
-1. **Follow Step-by-Step Instructions:**
-   - Create new files using native `write_to_file`.
-   - Modify existing files using native `replace_file_content` / `multi_replace_file_content`.
-2. **Implementation Rules:**
-   - Keep edits surgical and minimal.
-   - Do NOT introduce breaking signature changes to un-migrated consumers.
-   - Do NOT edit files outside the current phase's declared scope.
-   - If `--tdd` is active, write or update unit test files FIRST before implementing business logic.
+### Step 4: Status Mutation & Next Phase Handoff
+- Mark completed phase as `status: completed` in the phase file frontmatter and master `plan.md` table.
+- Report concise summary: files modified, test results, next pending phase.
+- If `--auto` is enabled: Advance directly to the next pending phase.
 
 ---
 
-### Step 4: Incremental Verification Gate
+## 🚀 Mode B: Autonomous Pipeline Protocol (`--vibe`)
 
-1. **Run the Phase Test Command:**
-   - Execute the exact command specified in the phase file (e.g. `npm test -- tests/services/auth.test.ts`, `go test -v ./internal/...`).
-2. **Evaluate Results:**
-   - **If Tests PASS:** Proceed immediately to Step 5.
-   - **If Tests FAIL:**
-     - Analyze error output $\rightarrow$ apply minimal targeted fix $\rightarrow$ re-run test.
-     - Maximum 3 retry loops. If still failing, STOP and report the blocker.
+Chains the full delivery lifecycle into an autonomous stream with strict safety gates:
 
----
+```
+┌─────────────────┬─────────────────┬───────────────────┬──────────────────┬──────────────────┐
+│ 1. Brainstorm   │ 2. Plan         │ 3. Pre-Flight Gate│ 4. Cook --auto   │ 5. Delivery Check│
+│ Select Approach │ Scaffold Dir    │ Reality Validation│ Execute Phases   │ Final Typecheck  │
+└─────────────────┴─────────────────┴───────────────────┴──────────────────┴──────────────────┘
+```
 
-### Step 5: Status Mutation & Next Phase Progression
-
-1. **Update Frontmatter & Master Plan:**
-   - In active phase file: update `status: completed`.
-   - In master `plan.md`: update phase row in the summary table to `Completed`.
-2. **Progression Decision:**
-   - **If `--auto` flag is present:** Check for next pending phase $\rightarrow$ Loop back to Step 2 for the next phase.
-   - **If `--auto` is NOT present (default interactive):** Present the Phase Summary and prompt the user before proceeding to the next phase.
-   - **If all phases are completed:** Run full project test suite and type check $\rightarrow$ Deliver Final Completion Report.
+1. **Ideation:** Automatically evaluates and selects the optimal solution direction.
+2. **Scaffold with Prefix Isolation:** All plans generated by `--vibe` must use the prefix:
+   `plans/vibe-<YYYYMMDD>-<slug>/`
+3. **Pre-Flight Validation Gate:** Automatically executes `/plan --validate` to verify all referenced symbols, imports, and caller impacts before writing implementation code.
+4. **Autonomous Execution:** Runs `/cook --auto` through all phases, enforcing incremental test gates and deadlock protection.
+5. **Final Delivery Check:** Runs full workspace typecheck (`tsc --noEmit`) to verify zero regressions.
 
 ---
 
-## 🛑 Cook Boundaries & Anti-Patterns
-
-- **DO NOT** attempt to implement Phase 2 while Phase 1 tests are still failing.
-- **DO NOT** skip updating phase status files upon completion.
-- **DO NOT** invent new dependencies or libraries not specified in the plan.
-- **DO NOT** use bash/powershell redirection (`>`, `>>`, `echo`) to modify source code.
-
----
-
-## 📋 Phase Execution Report Template
+## 📋 Standard Execution Summary Template
 
 ```markdown
-## ⚡ Cook Execution Report: [Plan Name] — Phase [N]: [Phase Title]
+## ⚡ Cook Execution Report: Phase [N] Complete
 
-### 1. Phase Status: ✅ COMPLETED
-- **Target File:** [`plans/<slug>/phase-01-types.md`](file:///path/to/phase-01-types.md)
-- **Status Mutation:** `pending` $\rightarrow$ `completed`
-
-### 2. Files Modified & Created
-- **[NEW]** [`src/types/feature.ts`](file:///path/to/src/types/feature.ts) — Defined request/response DTOs
-- **[MODIFY]** [`src/models/schema.ts`](file:///path/to/src/models/schema.ts) — Added status column
-
-### 3. Verification & Test Gate
-- **Test Command:** `npm test -- tests/types/feature.test.ts`
-- **Result:** `PASS` (X tests passed, 0 failures)
-- **Type Check:** `npm run type-check` $\rightarrow$ `Clean (0 errors)`
+### 1. Phase Status
+- **Plan:** `[path/to/plan.md]`
+- **Active Phase:** `Phase [N]: [Phase Name]` -> **COMPLETED**
+- **Next Phase:** `Phase [N+1]: [Next Name]` (or `ALL PHASES COMPLETED`)
 
 ---
 
-### 4. Next Step
-- ➡️ **Next Pending Phase:** **Phase [N+1]: [Next Title]** (`plans/<slug>/phase-02-services.md`)
-- *Run `/cook plans/<slug>/phase-02-services.md` or confirm to proceed.*
+### 2. Files Modified
+- `[NEW/MODIFIED]` `[path/to/file.ts:line]` - [Summary of applied change]
+
+---
+
+### 3. Verification Gate
+- **Command:** `[exact test command run]`
+- **Result:** **PASS (All N tests green, 0 errors)**
+- **Fix Attempts Required:** 0 / 3
+
+➡️ **Next Step:** Run `/cook` for Phase [N+1] or proceed to `/test` / `/refactor`.
 ```

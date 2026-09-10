@@ -1,193 +1,194 @@
 ---
-description: 🔍 Deep codebase understanding workflow. Use to investigate architecture, trace behavior, map dependencies, and reduce wrong assumptions before making changes.
+description: 🔍 Deep Codebase Understanding & Tracing Engine. Analyze architecture boundaries, trace Backend endpoints, or map Frontend data flows end-to-end.
+argument-hint: "[scope or endpoint] [--arch] [--be] [--fe] [--deep] [--out]"
 ---
 
-# /analyze - Codebase Understanding Mode
+# /analyze - Deep System Analysis & Flow Tracing Engine
 
 $ARGUMENTS
 
-## Purpose & Core Rule
+---
 
-Activates ANALYZE mode for deep code comprehension before implementation, refactoring, debugging, or review.
+## 🎯 Purpose & Core Principles
 
-> **ANALYZE = UNDERSTAND FIRST, CHANGE NOTHING UNLESS EXPLICITLY ASKED**
+Activates **DEEP ANALYZE & TRACE MODE** for rigorous code comprehension before planning, refactoring, debugging, or reviewing.
 
-- Trace execution flows and gather empirical evidence.
-- Map boundaries, dependencies, and state transitions.
-- Identify risks and explicitly state remaining unknowns.
-- **Strictly read-only:** Do NOT implement fixes, refactors, or features unless explicitly requested in a subsequent turn.
+> **IRON INVARIANTS:**
+> 1. **STRICTLY READ-ONLY:** Understand first, change nothing. Do NOT write patches, refactors, or new features during analysis.
+> 2. **EMPIRICAL EVIDENCE:** Cite exact file paths, line ranges (`file.ts:12-45`), and verifiable call chains. Zero speculation.
+> 3. **DYNAMIC & INDIRECT RESOLUTION:** Explicitly trace indirect invocations via Dependency Injection (IoC containers), dynamic reflection, event emitters/subscribers, message queues, and GraphQL dynamic schema resolvers.
+> 4. **EXPLICIT BOUNDARIES & UNKNOWNS:** Delineate verified code paths from dynamic runtime assumptions, external dependencies, and remaining unknowns.
 
 ---
 
-## When to Use
-
-- **Use when:** Unfamiliar codebase, multi-file/multi-layer changes, hard-to-reproduce bugs, mapping architecture/data flow, or preparing for `/enhance`, `/debug`, `/refactor`, `/review`, or `/security`.
-- **Do not use:** Obvious single-line or localized edits.
-
----
-
-## Supported Intents
+## ⚙️ Argument Parsing & Execution Modes
 
 ```text
-/analyze
-/analyze auth flow
-/analyze checkout feature
-/analyze why dashboard is slow
-/analyze api error handling
-/analyze state management
-/analyze routing and page entry points
-/analyze dependency graph for billing
-/analyze before refactor user module
+# General Codebase & System Analysis:
+/analyze <scope, feature, or subsystem> [--deep] [--out]
+
+# Architecture & Boundary Audit:
+/analyze --arch <module or workspace> [--out]
+
+# Backend Execution Trace:
+/analyze --be <endpoint or file> (e.g. POST /api/orders or OrderController.ts) [--out]
+
+# Frontend UI & State Flow Trace:
+/analyze --fe <component or page> (e.g. OrderPage.tsx or src/views/) [--out]
 ```
+
+### Auto-Detection Heuristic:
+- If target is an HTTP route (`GET /...`) or backend file (`*controller*`, `*service*`, `*repository*`, `*route*`) -> Auto-engages **Backend Trace Mode**.
+- If target is a UI file (`*.tsx`, `*.vue`, `*.svelte`, `*Page*`, `*Component*`) -> Auto-engages **Frontend Trace Mode**.
+- If `--arch` flag is present -> Engages **Architecture Boundary Mode**.
+- Flag `--out`: Saves output to `reports/ANALYZE-<YYYYMMDD>-<target-slug>.md`.
 
 ---
 
-## Investigation Depth Levels
+## 📖 Reading Strategy & Evidence Gathering
 
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│ 1. Entry Points │ ──► │ 2. Direct Calls │ ──► │ 3. Types/Schema │
+└─────────────────┘     └─────────────────┘     └────────┬────────┘
+                                                         │
+┌─────────────────┐     ┌─────────────────┐              ▼
+│ 6. Tests/Mocks  │ ◄── │ 5. DB/Services  │ ◄── ┌─────────────────┐
+│                 │     │ (IoC & Queues)  │     │ 4. State/Stores │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
+
+### Investigation Depth Levels:
 | Level | Scope | Deliverables |
 | :--- | :--- | :--- |
-| **Level 1: Surface Scan** | Quick orientation, file discovery, entry points | Relevant files list, top-level architecture overview, recommended next reads |
-| **Level 2: Flow Trace** | Feature understanding, bug tracing, request/response paths | End-to-end execution path, data/control flow, side effects, risk points |
-| **Level 3: Deep System Analysis** | Subsystems, large refactors, legacy code, hidden coupling | Full component/domain map, dependency directions, invariants, hotspots, redesign guidance |
+| **Level 1: Surface Scan** | Quick orientation, entry points | Relevant files list, top-level architecture overview |
+| **Level 2: Flow Trace** | Feature understanding, request paths | Step-by-step call graph, data mutation, side effects |
+| **Level 3: Deep System Audit** | Subsystems, legacy code, coupling | Full domain map, dependency direction, invariants, hotspots |
 
 ---
 
-## Analysis Protocol
+## 🔬 Protocol 1: Architecture & Boundary Audit (`--arch` or General)
 
-### Phase 1: Clarify Scope & Objectives
-- Identify target feature, bug, or module. Infer most likely scope if vague and declare assumptions.
-
-### Phase 2: Locate Entry Points
-- Identify starting points: routes, UI components, API handlers, CLI commands, workers, event listeners, or exported functions.
-- Determine if multiple or fallback entry points exist.
-
-### Phase 3: Map the Execution Chain
-- Trace callers, callees, service boundaries, hooks/stores, middleware, database queries, and async jobs.
-- Record file, symbol, role, incoming, and outgoing dependencies at each hop.
-- **Dynamic & Magic Resolution:** Uncover indirect invocations via Dependency Injection (IoC containers), dynamic reflection, event emitters/subscribers, and GraphQL dynamic schema resolvers.
-
-### Phase 4: Understand Data & State Flow
-- Track inputs, validation, transformation, caching, persistence, and UI/API outputs.
-- Identify nullable fields, implicit defaults, race conditions, and synchronization issues.
-
-### Phase 5: Identify Constraints & Invariants
-- Uncover business rules, auth gates, idempotency guarantees, schema assumptions, and required execution order. (Label inferred rules clearly).
-
-### Phase 6: Surface Risks & Unknowns
-- Flag fragile coupling, dead code, duplicated logic, hidden side effects, missing validations/tests, and unproven hypotheses.
-
-### Phase 7: Recommend Next Steps
-- Select the next best workflow (`/debug`, `/enhance`, `/refactor`, `/review`, `/security`, `/test`).
-
----
-
-## Reading Strategy & Evidence Checklist
-
-**Read Order:** Entry points → Immediate callees/imports → Shared types/schemas → State/store modules → Services/data layer → Tests → Config.
-
-**Stop Expanding When:** Execution path, data flow, and side effects are proven, and unread branches are out of scope.
-
-| Area | Key Verification Questions |
-| :--- | :--- |
-| **Entry Point** | Where does the flow begin? |
-| **Ownership** | Which module owns the business logic? |
-| **Dependencies** | What does it rely on or call? |
-| **State & Data** | What state/schema enters, transforms, and exits? |
-| **Side Effects** | DB writes, network calls, cache mutations, logs, emitted events? |
-| **Errors & Tests** | How are failures handled? What behavior is covered by tests? |
-| **Risks** | What breaks if this area is modified? |
-
----
-
-## Heuristics by Problem Type
-
-- **Feature Flow:** Focus on UI entry, service calls, API contracts, store updates, and feature flags.
-- **Bug Diagnosis:** Focus on reproduction path, input/output drift, swallowed errors, and fallback branches.
-- **Refactor Prep:** Focus on module boundaries, duplicated logic, public APIs, and consumers.
-- **Architecture:** Focus on layer boundaries, dependency direction, circular coupling, and domain leaks.
-- **Performance:** Focus on repeated computation, hot loops, heavy renders, N+1 queries, and cache misses.
-
----
-
-## Anti-Patterns to Avoid
-
-- Inferring behavior from file names or folder structure alone.
-- Stopping at the first plausible file without tracing callers.
-- Believing comments without verifying code implementation.
-- Recommending edits before mapping dependencies.
-- Presenting unverified speculation as established fact.
-
----
-
-## Output Formats
-
-### Standard Format
-
-```markdown
-## 🔬 Analysis Report: [Topic]
-
-### Scope & Executive Summary
-- **Target & Depth:** [Target area] | [Level 1 / 2 / 3]
-- **Summary:** [Concise paragraph on how this flow currently functions]
-
-### Relevant Files & Roles
-| File | Role / Responsibility |
-| :--- | :--- |
-| `src/...` | [Entry / Logic / State / Persistence] |
-
-### Execution & Data Flow
-1. **Entry:** [Trigger point]
-2. **Chain:** [Step-by-step caller -> callee sequence]
-3. **Data Transformations:** [Input -> Validation -> State/DB -> Output]
-
-### Key Findings & Invariants
-- **Observed (Facts):** [Evidence grounded in code]
-- **Inferred (Hypotheses):** [Carefully labeled deductions]
-- **Invariants:** [Assumptions and rules the code relies on]
-
-### Risks & Unknowns
-- **Risks:** [Coupling, race conditions, edge cases]
-- **Unknowns:** [What remains unproven without runtime/logs]
-
-### Recommended Next Step
-- `/debug` | `/enhance` | `/refactor` | `/test` | `/review` with exact focus area
+```
+┌────────────────────────┐     ┌────────────────────────────────┐
+│ 1. Scope & Entry Points│ ──► │ 2. Dependency Graph & Coupling │
+└────────────────────────┘     └───────────────┬────────────────┘
+                                               │
+┌────────────────────────┐     ┌───────────────▼────────────────┐
+│ 4. Findings & Risk Map │ ◄── │ 3. Layer Contracts & Invariants│
+└────────────────────────┘     └────────────────────────────────┘
 ```
 
-### Short Format
+### Investigation Dimensions:
+1. **Entry Points & Routing:** How requests or users enter the module.
+2. **Dependency Direction:** Verify adherence to Clean/Hexagonal rules (dependencies point inward; domain logic does not depend on DB or HTTP transport).
+3. **Coupling Hotspots:** Identify circular dependencies (`A -> B -> A`), God-objects, and tight coupling across domain boundaries.
+4. **State & Invariants:** Document single-source-of-truth, concurrency locks, and transaction scopes.
 
-```markdown
-## 🔬 Analysis: [Topic]
-- **Entry Point:** `path/to/entry`
-- **Key Files:** `fileA`, `fileB`
-- **Execution Flow:** [Brief 1-paragraph summary]
-- **Primary Risk:** [Key vulnerability or coupling]
-- **Next Step:** `/workflow [args]`
+---
+
+## 🔬 Protocol 2: Backend Request & Persistence Tracing (`--be`)
+
+Traces the execution path of an API endpoint, background worker, or queue consumer:
+
+```
+[Client / Caller]
+       │
+       ▼
+1. Entry & Routing      ──► Route definition, HTTP method, URL parameters, DTO schema
+       │
+       ▼
+2. Guards & Middleware  ──► Auth/JWT check, RBAC permissions, CORS, Rate limits, Body validation
+       │
+       ▼
+3. Business Domain      ──► Service layer, Domain rules, Orchestration, Transaction blocks
+       │
+       ▼
+4. Data Persistence     ──► ORM/Query builder, SQL queries, Redis cache lookups, Index audit
+       │
+       ▼
+5. Side Effects         ──► Message queues (Kafka/RabbitMQ/BullMQ), Webhooks, 3rd party APIs, Emails
 ```
 
----
-
-## Confidence & Escalation
-
-- **Confidence Labels:** Tag findings as **High** (confirmed by code/tests), **Medium** (strongly supported), or **Low** (plausible inference).
-- **Escalate Depth when:** Encountering multiple entry points, dynamic imports, plugin architectures, conflicting tests vs code, or hidden side effects.
-
----
-
-## Handoff Matrix
-
-| Target Goal | Next Workflow |
-| :--- | :--- |
-| Fix a diagnosed bug | `/debug` |
-| Add new features | `/enhance` |
-| Improve structure without behavior change | `/refactor` |
-| Add/audit test coverage | `/test` or `/test-audit` |
-| Code quality or security audit | `/review` or `/security` |
+### Deep Backend Audit Checklist:
+- **IoC & Indirect Resolvers:** Uncover injected dependencies (NestJS `@Injectable()`, Spring `@Autowired`, Go Wire) and dynamic reflection.
+- **Database & Query Audit:**
+  - Detect **N+1 queries** in loops (e.g. querying child records inside an un-batched `map` or `for` loop).
+  - Verify **Transaction Boundaries**: Ensure mutating operations are wrapped in `@Transactional` or `db.transaction()` blocks.
+  - Check **Connection Pool & Indexes**: Flag unindexed table scans on large tables and unclosed DB connections.
+- **Event & Queue Pipeline:** Trace emitted events (`eventEmitter.emit()`), message broker producers, and downstream queue consumer handlers.
 
 ---
 
-## Definition of Done
+## 🔬 Protocol 3: Frontend Data Flow & Interaction Tracing (`--fe`)
 
-1. Relevant entry point and primary execution path mapped.
-2. Key files, dependencies, and state transitions documented.
-3. Invariants, risks, and unknowns explicitly separated.
-4. Concrete next workflow recommended.
+Traces component rendering, interaction, state mutations, and network syncing:
+
+```
+[DOM / User Interaction] ──► Click, input change, lifecycle mount
+       │
+       ▼
+1. Event Handlers        ──► Local callback functions, input sanitization
+       │
+       ▼
+2. State Mutation        ──► useState / useReducer / Zustand / Redux dispatch
+       │
+       ▼
+3. Custom Hooks / Sync   ──► useEffect, React Query / TanStack Query, SWR fetcher
+       │
+       ▼
+4. API Client Gateway    ──► Axios / Fetch wrapper, request interceptors, Auth headers
+       │
+       ▼
+5. Re-render & UI Tree   ──► Cache invalidation, optimistic updates, DOM re-render
+```
+
+### Deep Frontend Audit Checklist:
+- **AST Component Extraction:** Deconstruct component trees, props drilling, and custom hook resolution (utilizing `traceui` MCP tools when available).
+- **Re-Render Hotspots:** Flag unstable object references passed down props, unmemoized context providers, and missing `useMemo`/`useCallback` on heavy child components.
+- **State Integrity & Optimistic UI:** Verify rollback mechanisms on API failure (ensuring UI reverts correctly if server returns 4xx/5xx).
+
+---
+
+## 📋 Standard Output Template
+
+```markdown
+## 🔍 Analysis Report: [Target / Scope]
+
+### 1. Architectural Summary & Scope
+- **Domain / Component:** [Name & Role]
+- **Entry Points:** `[path/to/entry:line]`
+- **Architectural Layer:** [Presentation / Application / Domain / Infrastructure]
+
+---
+
+### 2. End-to-End Execution Trace
+
+```
+[Layer 1: Entry] -> [Layer 2: Validation] -> [Layer 3: Core Logic] -> [Layer 4: Storage/Effects]
+```
+
+| Step | Layer | File:Line | Function / Symbol | Operational Details |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | Route/Entry | `src/routes/order.ts:25` | `POST /orders` | Route registration & schema validation |
+| 2 | Guard | `src/middleware/auth.ts:40` | `requireAuth()` | JWT verification & injects `req.user` |
+| 3 | Domain | `src/services/order.ts:88` | `createOrder()` | Validates stock, calculates tax |
+| 4 | DB / Cache | `src/repos/order.ts:110` | `db.insert()` | Atomic transaction with balance lock |
+| 5 | Side Effect | `src/events/orderProducer.ts:45` | `publishOrderCreated()` | Dispatches Kafka event |
+
+---
+
+### 3. Critical Findings & Boundary Risks
+- ⚠️ **Coupling / Bottleneck:** [Identified issue with file citation]
+- 🔒 **Security / State Invariant:** [Observations regarding auth/concurrency/sanitization]
+- ⚡ **Database & Query Risk:** [Identified N+1 query, missing index, or un-isolated transaction]
+- 🔄 **Re-render / Async Risk:** [Unmemoized context or unhandled rejection risk]
+
+---
+
+### 4. Verified vs Unknowns
+- **Verified Facts:** [List of proven behaviors from direct code inspection]
+- **Remaining Unknowns:** [Dynamic env configs, external 3rd-party API responses]
+
+➡️ **Recommended Next Workflow:** `/plan` (for feature/fix implementation) or `/refactor` (for cleaning).
+```

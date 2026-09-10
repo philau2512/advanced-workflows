@@ -1,174 +1,132 @@
 ---
-description: ⚡ Performance and efficiency optimization workflow. Improve speed, throughput, resource usage, and scalability using evidence-driven changes.
+description: ⚡ Evidence-Driven Performance & Resource Optimization Engine. Optimize database queries, reduce API latency, fix memory leaks, and tune rendering performance.
+argument-hint: "[bottleneck or target] [--profile] [--out]"
 ---
 
-# /optimize - Evidence-Driven Optimization Mode
+# /optimize - Evidence-Driven Performance Optimization Engine
 
 $ARGUMENTS
 
-## Purpose & Core Rule
+---
 
-Activates OPTIMIZE mode for improving latency, throughput, resource efficiency, and scalability based on measured evidence.
+## 🎯 Purpose & Core Principles
 
-> **OPTIMIZE = MEASURE FIRST, CHANGE SECOND, RE-MEASURE LAST**
+Activates **OPTIMIZATION MODE** to systematically improve latency, throughput, resource efficiency, and scalability based on measured profiling data.
 
-- Base optimizations on empirical profiling, logs, or metrics rather than guesswork.
-- Scope changes strictly to the identified bottleneck.
-- **Safety guarantee:** Performance gains must never silently compromise correctness, data integrity, or public contracts.
+> **IRON INVARIANTS:**
+> 1. **MEASURE FIRST, CHANGE SECOND, RE-MEASURE LAST:** Base all optimizations on empirical profiling or reproducible metrics, not speculative guesswork.
+> 2. **CORRECTNESS OVER SPEED:** Performance gains must never compromise data integrity, transaction boundaries, or public API contracts.
+> 3. **TARGETED BLAST RADIUS:** Isolate interventions directly to the identified bottleneck. Avoid premature micro-optimizations across unaffected areas.
+> 4. **CACHE SAFETY & SERIALIZATION PARITY:** Caching must implement explicit invalidation on writes, stampede locks, and serialization parity (e.g. preserving `Date`, `Map`, `Set`, `BigInt` types upon deserialization).
+> 5. **RETRY STORM & COST PROTECTION:** Any automated retry logic must strictly enforce Exponential Backoff, Jitter, and hard max caps to prevent third-party API quota exhaustion or cascading outages.
 
 ---
 
-## When to Use
-
-- **Use when:** High API latency, sluggish UI rendering, database N+1/slow queries, excessive memory/CPU consumption, slow builds, or scaling bottlenecks.
-- **Do not use:** General structural cleanups (use `/refactor`), fixing functional bugs (use `/debug`), or micro-tuning without evidence.
-
----
-
-## Supported Intents
+## ⚙️ Argument Parsing & Usage
 
 ```text
-/optimize dashboard render performance
-/optimize slow checkout API
-/optimize database queries for orders
-/optimize bundle size
-/optimize upload pipeline
-/optimize memory usage in background worker
-/optimize caching for product listing
-/optimize before high traffic launch
+/optimize <bottleneck description, endpoint, or component> [--profile] [--out]
 ```
 
----
-
-## Optimization Safety Contract
-
-### Must Preserve
-- Business logic, data integrity, user-visible behavior, API contracts, security guarantees, idempotency, and error handling.
-- **Serialization Parity:** Caching complex objects (Date, Map, Set, BigInt, RegExp) must preserve exact data types across serialization/deserialization cycles without string/null mutation.
-
-### High-Risk Actions (Verify Thoroughly)
-- Caching mutable state (requires cache invalidation & stampede locks).
-- **Retry Storms & API Cost Loops:** Retries on failed downstream/3rd-party services must strictly enforce Exponential Backoff, Jitter, and hard max-retry caps to avoid billing spikes or cascading outages.
-- Parallelizing sequential/ordered side effects or batching writes.
-- Lazy-loading critical paths or skipping validation checks.
+### Examples:
+- `/optimize slow checkout API endpoint`
+- `/optimize database query in order repository`
+- `/optimize memory leak in background worker`
+- `/optimize frontend bundle size and dashboard re-renders`
 
 ---
 
-## Optimization Categories
+## 🔬 4-Phase Optimization Protocol
 
-| Category | Typical Hotspots | Target Interventions |
+```
+┌────────────────────────┐     ┌────────────────────────┐
+│ 1. Baseline Benchmark  │ ──► │ 2. Root Bottleneck     │
+│    (Measure & Quantify)│     │    Identification      │
+└────────────────────────┘     └───────────┬────────────┘
+                                           │
+┌────────────────────────┐     ┌───────────▼────────────┐
+│ 4. Verification &      │ ◄── │ 3. Targeted            │
+│    Regression Guard    │     │    Intervention        │
+└────────────────────────┘     └────────────────────────┘
+```
+
+### Phase 1: Baseline Measurement & Bottleneck Profiling
+- Record exact baseline performance metrics before touching code:
+  - **Latency:** P50, P95, and P99 response times in ms.
+  - **Database:** Total query count per request, scan type (Sequential Scan vs Index Scan), execution duration via `EXPLAIN ANALYZE`.
+  - **Frontend:** Component render count, unneeded prop re-renders, bundle chunk size in KB, TTI / LCP.
+  - **System Resources:** Peak RSS memory in MB, CPU saturation percentage, GC pause frequency.
+
+---
+
+### Phase 2: Bottleneck Categorization
+
+| Category | Typical Hotspots | Evidence-Driven Solutions |
 | :--- | :--- | :--- |
-| **1. Frontend Rendering** | UI lag, unnecessary rerenders, large lists, SPA memory leaks | List virtualization, state granularity, memoizing heavy paths, cleanup unmounted event listeners/subscriptions |
-| **2. Network & Payload** | Large responses, waterfall requests | Request batching, payload trimming, compression, selective prefetching |
-| **3. Database & Queries** | Slow queries, N+1 loading, missing indexes, cache stampede | Query restructuring, adding/tuning indexes, batching reads/writes, cache locks/probabilistic early expiration |
-| **4. CPU & Memory** | CPU spikes, memory leaks, high GC pressure | Stream vs buffer, hot loop optimization, clearing retained closures/event listeners |
-| **5. Build & Tooling** | Slow startup, bloated bundle, long CI, serverless cold starts | Tree shaking, dynamic imports, build caching, pruning heavy dependencies, optimizing cold start init |
-| **6. Cost & Capacity** | Excessive cloud compute/API calls | Efficient caching, concurrency tuning, eliminating redundant operations |
+| **1. Database & Queries** | N+1 queries, unindexed filters, `SELECT *` over large tables | Eager loading (`join`/`include`), composite indexes, selective column projection. |
+| **2. Backend & APIs** | Serial independent async calls, heavy JSON payload transforms | `Promise.all()` concurrency, streaming response bodies, lean DTO mappings. |
+| **3. Caching Layer** | Repeated identical DB queries, expensive compute cycles | Redis with TTL, cache-stampede distributed locks, probabilistic early expiration. |
+| **4. Memory & Leaks** | Unbounded arrays, retained closures, dangling subscriptions | `WeakMap`/`WeakSet`, streaming streams for large exports, explicit unmount cleanup. |
+| **5. Frontend & UI** | Heavy re-renders, oversized bundles, unmemoized context | Virtualized lists, dynamic `import()` code splitting, selective memoization. |
+| **6. Cloud & External APIs**| Excessive 3rd-party calls, burst API billing spikes | Batching API calls, Exponential Backoff + Jitter, local request deduplication. |
 
 ---
 
-## Optimization Protocol
+### Phase 3: Targeted Intervention & Safety Guards
 
-### Phase 1: Define the Problem & Target Metric
-- Explicitly state what is slow/heavy, the affected user/system path, and the target metric (e.g., "p95 latency < 300ms", "reduce render time on 10k rows").
+Apply the minimal structural modification addressing the bottleneck:
 
-### Phase 2: Establish a Baseline
-- Record current measurements (latency, query duration, bundle size, CPU/RAM) before touching code.
-
-### Phase 3: Identify the Bottleneck
-- Isolate the limiting factor (I/O, CPU, DB, Network, Lock contention) rather than treating superficial symptoms.
-
-### Phase 4: Select Smallest High-Impact Strategy
-- Priority: Remove wasted work → Reduce redundant I/O → Narrow recomputation → Optimize queries/indexes → Cache safely → Parallelize.
-
-### Phase 5: Implement Targeted Changes
-- Apply changes scoped strictly to the bottleneck. Avoid unrelated refactoring in the optimization pass.
-
-### Phase 6: Re-Measure & Compare
-- Verify measurable delta (Before vs After, improvement %, resource impact vs tradeoffs).
-
-### Phase 7: Validate Correctness & Parity
-- Verify business logic, data consistency, cache freshness, and existing test suites remain 100% intact.
+#### 🛡️ Optimization Safety Checklist:
+- [ ] **Data & Contract Parity:** API request/response format and database schemas remain 100% stable.
+- [ ] **Serialization Parity:** Cached objects rehydrate with original prototypes (`Date`, `BigInt`) without string corruption.
+- [ ] **Cache Invalidation:** Cache keys are explicitly invalidated or updated on every mutation path (create, update, delete).
+- [ ] **Stampede Protection:** Mutex locks or stale-while-revalidate applied to high-traffic cached endpoints.
+- [ ] **Retry Storm Protection:** Outbound retries use exponential backoff with randomized jitter; max retries capped $\le 3$.
+- [ ] **Unmount Cleanup:** All frontend event listeners, timers, and WebSocket subscriptions are explicitly cleaned up.
 
 ---
 
-## Measurement Checklist
+### Phase 4: Post-Optimization Verification
 
-| Domain | Key Metrics |
-| :--- | :--- |
-| **API / Backend** | p50/p95/p99 latency, throughput (RPS), connection pool saturation |
-| **Frontend** | LCP, INP, CLS, component render duration, rerender count |
-| **Database** | Query execution time, rows examined vs returned, index hit rate |
-| **System** | Peak memory (RSS), CPU utilization %, garbage collection pauses |
-
----
-
-## Anti-Patterns to Avoid
-
-- Optimizing without baseline measurements or profiling evidence.
-- Indiscriminately adding memoization/caching everywhere without invalidation logic.
-- Trading correctness, safety, or readability for negligible micro-gains.
-- Parallelizing operations that rely on strict execution order.
-- Declaring victory based on synthetic benchmarks without verifying end-to-end user flows.
+1. Re-run benchmark under identical baseline conditions.
+2. Verify that:
+   - The target metric measurably improved (e.g. latency decreased by $\ge 40\%$ or DB queries reduced from 25 to 2).
+   - All automated unit and integration tests continue to pass with zero regressions.
+   - Typecheck is completely clean (`tsc --noEmit`).
 
 ---
 
-## Output Formats
-
-### Standard Format
+## 📋 Standard Optimization Report Template
 
 ```markdown
-## ⚡ Optimization Report: [Target]
+## ⚡ Performance Optimization Report: [Target / Bottleneck]
 
-### Objective & Baseline
-- **Target:** [Feature/API/Component]
-- **Problem & Metric:** [Latency / Memory / Render time / Query count]
-- **Baseline:** [Measured before value] (Source: Logs / Profiler / Trace)
-- **Goal:** [Target after value]
+### 1. Executive Summary & Measured Impact
 
-### Bottleneck Analysis & Plan
-- **Bottleneck:** [Exact root cause limiting performance]
-- **Strategy:** [Specific targeted intervention]
-
-### Changes Made
-| Area | Modification | Expected Impact |
-| :--- | :--- | :--- |
-| `src/...` | [Query tuning / Virtualization / Caching] | [Latency/Memory reduction] |
-
-### Results & Verification
-- **Before vs After:** [Before] → [After] ([Delta / % Improvement])
-- **Tradeoffs:** [None / Memory / Added complexity]
-- **Correctness Check:** [Tests passed, contracts preserved]
-- **Next Follow-up:** `/test` | `/review`
-```
-
-### Short Format
-
-```markdown
-## ⚡ Optimization: [Target]
-- **Problem & Metric:** [One line]
-- **Bottleneck:** [Root cause]
-- **Change:** [Key modification]
-- **Result:** [Before] → [After] ([% improvement])
-- **Tradeoff & Risk:** [None / Low]
-```
+| Metric Dimension | Before Optimization | After Optimization | Net Improvement |
+| :--- | :--- | :--- | :--- |
+| **P95 Latency** | 420 ms | 65 ms | **84% reduction** |
+| **DB Queries per Request** | 24 queries (N+1) | 2 queries | **91% query reduction** |
+| **Peak Memory Allocation** | 180 MB | 45 MB | **75% lower footprint** |
 
 ---
 
-## Handoff Matrix
-
-| Next Need | Workflow |
-| :--- | :--- |
-| Verify correctness with regression tests | `/test` or `/test-audit` |
-| Audit introduced complexity or caching logic | `/review` |
-| Deep dive into an unclear downstream bottleneck | `/analyze` |
-| Clean up architecture after optimization | `/refactor` |
+### 2. Root Cause Analysis
+- **Identified Bottleneck:** `[file.ts:line]`
+- **Mechanics:** [Technical explanation of why the previous implementation was inefficient]
 
 ---
 
-## Definition of Done
+### 3. Applied Intervention & Safety Verification
+- **Modified File:** `[path/to/file.ts:line]`
+- **Technique Applied:** [e.g. Added composite index on (tenant_id, status) and converted to eager join]
+- [x] Serialization parity preserved (No Date/BigInt corruption).
+- [x] Cache invalidation added to update mutation handlers.
+- [x] Outbound API retries bounded with Exponential Backoff + Jitter.
 
-1. Concrete performance bottleneck identified and evidenced with a baseline.
-2. Targeted optimization applied directly to the bottleneck.
-3. Before/after comparative measurement reported.
-4. Correctness, edge cases, and test suites verified.
+---
+
+### 4. Verification Gate
+- **Functional Test Suite:** **PASS (Zero regressions)**
+- **Type Check:** `tsc --noEmit` -> **CLEAN (0 errors)**
+```

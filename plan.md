@@ -1,8 +1,9 @@
 ---
-description: 📋 Reality-grounded technical implementation planning workflow with multi-phase directory structure, phase files, concrete file diffs, and TDD matrices.
+description: 📋 Enterprise-grade multi-phase directory technical implementation planning & reality validation engine. Generates plan folder, master plan.md, comprehensive phase-NN-*.md files with full contract specs, and TDD matrices.
+argument-hint: "[feature or task] [--deep] [--tdd] [--single] [--validate] [--fast]"
 ---
 
-# /plan - Reality-Grounded Technical Implementation Planning Mode
+# /plan - Multi-Phase Implementation Planning & Reality Validation Engine
 
 $ARGUMENTS
 
@@ -10,157 +11,354 @@ $ARGUMENTS
 
 ## 🎯 Purpose & Core Principles
 
-Activates **PLANNING MODE** to construct a rigorous, execution-ready implementation plan grounded 100% in actual codebase reality.
+Activates **DEEP ARCHITECTURAL PLANNING & REALITY-CHECK MODE** to produce grounded, production-grade, phase-by-phase implementation plans structured into dedicated plan directories, or audit existing plans against codebase reality before writing code.
 
 > **IRON INVARIANTS:**
-> 1. **ZERO HALLUCINATED PATHS:** Every cited existing file, class, method, or schema MUST be verified in the actual repository before inclusion.
-> 2. **CONCRETE FILE-LEVEL DIFFS:** Clearly classify every affected file as `[NEW]`, `[MODIFY]`, or `[DELETE]` with exact symbols and signatures.
-> 3. **MULTI-PHASE DIRECTORY FIRST:** By default, generate a structured plan folder `plans/<YYYYMMDD>-<slug>/` with `plan.md` and individual `phase-NN-*.md` files.
-> 4. **TEST-DRIVEN & VERIFIABLE:** Every phase must include automated test commands and observable acceptance criteria.
+> 1. **ZERO HALLUCINATED PATHS:** Every cited file path, model, class, and function must be verified against actual workspace files.
+> 2. **MULTI-PHASE DIRECTORY FIRST:** By default (for tasks spanning 2+ phases), create a dedicated plan folder `plans/<YYYYMMDD>-<slug>/` with a master `plan.md` index and individual `phase-NN-*.md` files.
+> 3. **STATUS & PROGRESS TRACKING:** Master `plan.md` and all phase files must track active status (`pending` | `in-progress` | `completed` | `cancelled`) for atomic execution handoff.
+> 4. **TECHNICAL DEPTH & ANTI-BREVITY:** Never produce shallow summaries (e.g. 30-50 line phases). Every phase file must be an exhaustive, self-contained implementation contract containing complete data structures, function signatures, step-by-step logic, edge cases, and rollback strategies.
+> 5. **ATOMIC & SEQUENCED PHASES:** Each phase must leave the repository in a working, testable state with explicit file ownership (`[NEW]`, `[MODIFY]`, `[DELETE]`).
+> 6. **TDD-FIRST VERIFICATION:** Every phase must declare its automated test commands, failure conditions, and observable acceptance criteria before implementation.
+> 7. **PLAN AUDIT GATE:** Automatically validate symbol existence and caller impacts before declaring a plan ready for `/cook`.
 
 ---
 
-## ⚙️ Argument Parsing & Execution Flags
+## ⚙️ Argument Parsing & Usage
 
-- `--single`: Force a single standalone plan file (`implementation_plan.md` or `plans/<slug>.md`) instead of a multi-phase folder.
-- `--tdd`: Enforce strict Test-Driven Development (requires writing failing tests before implementation steps in each phase).
-- `--fast`: Generates a condensed single-phase plan for small, low-risk, or localized changes.
-- `$ARGUMENTS`: Task description, accepted brainstorm direction, feature request, or refactor target.
+```text
+# Standard multi-phase implementation plan folder:
+/plan <feature description or technical task> [--tdd]
+
+# Deep enterprise-grade planning (maximum depth, full signatures, sequence diagrams):
+/plan <feature description or complex refactor> --deep [--tdd]
+
+# Generate a single standalone plan file (strictly for trivial or localized changes):
+/plan <simple task> --single
+
+# Fast planning mode for low-risk tweaks:
+/plan <minor tweak> --fast
+
+# Audit & validate an existing plan file or plan directory against code reality:
+/plan --validate <path/to/plan.md or plans/<slug>/>
+```
+
+### Flags:
+- `--deep`: **(Recommended for non-trivial features)** Forces exhaustive architectural depth: complete function signatures, DTO/type schemas, Mermaid sequence/data flow diagrams, comprehensive edge-case matrices, and concrete rollback plans.
+- `--tdd`: Enforces strict Test-Driven Development (writing characterization/failing tests before code edits in each phase).
+- `--single`: Generates a single standalone plan file instead of a multi-file directory (only for small, localized tasks).
+- `--fast`: Fast planning mode with minimal codebase scouting.
+- `--validate`: Audits an existing plan against the workspace (symbol existence, call-site impacts, schema compatibility).
 
 ---
 
 ## 📁 Plan Directory Architecture
 
-By default (for tasks with 2+ phases), create a dedicated directory:
+Default structure generated in the project root:
 
-```
+```text
 plans/<YYYYMMDD>-<feature-slug>/
-  ├── plan.md              # Master plan: Overview, Architecture, Dependency Graph, Phases Table
-  ├── phase-01-<name>.md   # Phase 1: Foundation, Types & Schemas
-  ├── phase-02-<name>.md   # Phase 2: Core Services & Business Logic
-  ├── phase-03-<name>.md   # Phase 3: Endpoints & UI Integration
-  └── phase-04-<name>.md   # Phase 4: E2E Verification & Migration
+├── plan.md                     # Master index: Executive Summary, Architecture Diagram, Phases Table & Status
+├── phase-01-<name>.md          # Phase 1: Foundation, Data Contracts, Schemas & Migrations
+├── phase-02-<name>.md          # Phase 2: Core Domain Logic, Services & State Transitions
+├── phase-03-<name>.md          # Phase 3: Integration, API Endpoints & UI Presentation
+└── phase-04-<name>.md          # Phase 4: E2E Verification, Seeders, Polish & Rollback
 ```
 
 ---
 
-## 🔬 4-Phase Planning Protocol
+## 🔬 4-Stage Planning Protocol
 
+```text
+┌────────────────────────┐     ┌────────────────────────────────┐
+│ 1. Context & Baseline  │ ──► │ 2. Multi-File Directory Setup  │
+│    (Deep codebase scan)│     │    (Master plan.md & phases)   │
+└────────────────────────┘     └───────────────┬────────────────┘
+                                               │
+┌────────────────────────┐     ┌───────────────▼────────────────┐
+│ 4. Reality Validation  │ ◄── │ 3. TDD Verification Matrix     │
+│    (Gate before /cook) │     │    (Edge cases & rollback)     │
+└────────────────────────┘     └────────────────────────────────┘
 ```
-┌────────────────────────┐     ┌────────────────────────┐
-│ 1. CODEBASE SCOUT      │ ──► │ 2. PHASE SEQUENCING    │
-│    (Ground-Truth Check)│     │    & Multi-File Splitting
-└────────────────────────┘     └───────────┬────────────┘
-                                           │
-┌────────────────────────┐                 ▼
-│ 4. VERIFICATION &      │ ◄── ┌────────────────────────┐
-│    Rollback Matrix     │     │ 3. CONCRETE FILE DIFFS │
-└────────────────────────┘     │    & Contract Specs    │
-                               └────────────────────────┘
-```
+
+### Stage 1: Context & Codebase Reality Grounding
+- Inspect codebase using search tools (`fast_context_search`, `grep_search`).
+- Identify exact existing models, interfaces, serializers, service layers, and route handlers.
+- Search all call-sites and consumers to determine the blast radius of any signature modification.
+- Identify existing unit/integration test suites covering the affected areas.
+
+### Stage 2: Multi-File Directory Setup & Phased Decomposition
+- Create dedicated plan folder: `plans/<YYYYMMDD>-<slug>/`.
+- Decompose work into sequential, independently testable phases (typically 2 to 4 phases):
+  - **Phase 1: Foundation & Contracts:** Types, interfaces, DB migrations, DTOs.
+  - **Phase 2: Core Domain Logic:** Services, business calculations, state machines.
+  - **Phase 3: Integration & Presentation:** API endpoints, UI components, wiring.
+  - **Phase 4: Polish & Edge Cases:** Error handling, logging, caching, cleanup.
+- Author master `plan.md` as the navigation index and delivery contract.
+- Author each `phase-NN-<name>.md` following the comprehensive 11-section standard.
+
+### Stage 3: TDD Verification Matrix & Edge Cases
+For each phase file, declare:
+- Target test file (`tests/...` or `*.spec.ts`).
+- Exact execution command (e.g. `uv run python manage.py test ...` or `npx vitest run ...`).
+- Matrix of happy paths, boundary conditions, and regression failure guards.
+
+### Stage 4: Reality Validation Gate (Self-Audit)
+Run the **4-Role Validation Gate** before presenting the plan:
+1. **Fact Checker:** Verify all files and imported symbols exist in the repository.
+2. **Contract Verifier:** Verify parameter and signature changes do not break existing callers.
+3. **Layer Auditor:** Verify architectural layer boundaries (no presentation logic in domain).
+4. **Safety Auditor:** Verify rollback strategy, state handling, transactions, and auth guard coverage.
 
 ---
 
-### Phase 1: Codebase Reality Scout (Ground-Truth Check)
+## 📋 Canonical Plan Templates
 
-Before writing any plan files, inspect the live repository:
-1. **Locate Existing Entry Points & Models:**
-   - Use `fast_context_search` and `grep_search` to discover existing patterns, models, middleware, and utilities.
-   - Confirm exact file paths, exported symbol names, and directory conventions.
-2. **Audit Consumers & Blast Radius:**
-   - Search for all callers/usages of symbols that will be modified.
-   - Identify existing test suites (`*.test.ts`, `*_test.go`, `test_*.py`) covering the affected areas.
-3. **Verify Installed Dependencies:**
-   - Check `package.json`, `go.mod`, `Cargo.toml`, or `requirements.txt`. Do NOT assume a package exists without checking.
-
----
-
-### Phase 2: Multi-Phase Directory Generation & Sequencing
-
-Decompose the work into sequential, independently testable phases:
-
-- **Create Directory:** `plans/<YYYYMMDD>-<slug>/`
-- **Draft Master `plan.md`:** Contains the global architecture, dependency graph, and phases summary table.
-- **Draft Individual `phase-NN-*.md` Files:** Each file contains the detailed step-by-step implementation for that phase.
-
----
-
-## 📋 Canonical File Templates
-
-### 1. Master `plan.md` Template (`plans/<YYYYMMDD>-<slug>/plan.md`)
+### 1. Master Plan Template (`plans/<YYYYMMDD>-<slug>/plan.md`)
 
 ```markdown
-# 📋 Master Plan: [Feature / Refactor Name]
+---
+title: "{Brief Plan Title}"
+description: "{One-sentence executive summary of the feature or refactor}"
+status: pending  # pending | in-progress | completed | cancelled
+priority: P1     # P1 (High) | P2 (Medium) | P3 (Low)
+effort: 6h       # Estimated total effort
+tags: [backend, frontend, database, api]
+created: YYYY-MM-DD
+---
 
-**Target Objective:** [1-2 sentences summarizing the goal]
-**Scope:** [Affected components, services, or layers]
+# 📋 Implementation Plan: [Feature / Task Name]
+
+## 1. Executive Summary & Delivery Contract
+- **Goal:** [Brief statement of what will be achieved]
+- **Target Outcome:** [Concrete, observable behavior or business capability delivered]
+- **Verified Codebase Baseline:** [Key existing files, models, and entry points verified in repository]
 
 ---
 
-## ⚠️ User Review Required
+## 2. User Review Required & Breaking Changes
 
 > [!IMPORTANT]
-> List any breaking changes, public API modifications, database schema migrations, or key architectural decisions requiring explicit sign-off.
+> Highlight any breaking changes, public API modifications, database schema migrations, or architectural decisions requiring explicit sign-off.
 
 ---
 
-## 🗺️ Phases Summary & Dependency Graph
+## 3. High-Level Architecture & Data Flow
 
-```mermaid
+\`\`\`mermaid
 graph TD
-    P1["Phase 1: Types & Schemas"] --> P2["Phase 2: Core Logic"]
-    P2 --> P3["Phase 3: Integration"]
-    P3 --> P4["Phase 4: Verification"]
-```
+    Client["Client / UI"] --> API["API Controller / Endpoint"]
+    API --> Service["Domain Service"]
+    Service --> DB[("Database / Store")]
+\`\`\`
 
-| Phase | File | Status | Description |
-| :--- | :--- | :--- | :--- |
-| **Phase 1** | [`phase-01-types.md`](file:///path/to/phase-01-types.md) | Pending | Contracts, DTOs, and Schema definitions |
-| **Phase 2** | [`phase-02-services.md`](file:///path/to/phase-02-services.md) | Pending | Domain services & business logic |
-| **Phase 3** | [`phase-03-integration.md`](file:///path/to/phase-03-integration.md) | Pending | API endpoints & UI wiring |
-| **Phase 4** | [`phase-04-verification.md`](file:///path/to/phase-04-verification.md) | Pending | E2E testing, cleanup & rollback plan |
+---
+
+## 4. Dependency Graph & Phases Summary
+
+\`\`\`mermaid
+graph TD
+    P1["Phase 1: Foundation & Contracts"] --> P2["Phase 2: Core Domain Logic"]
+    P2 --> P3["Phase 3: Integration & UI"]
+    P3 --> P4["Phase 4: Verification & Polish"]
+\`\`\`
+
+### Phases Roadmap
+
+| Phase | File | Status | Effort | Description |
+| :---: | :--- | :---: | :---: | :--- |
+| **1** | [Foundation & Contracts](./phase-01-foundation.md) | `pending` | 1.5h | Types, DTOs, Schemas and DB Migrations |
+| **2** | [Core Domain Logic](./phase-02-domain-logic.md) | `pending` | 2h | Services, state transitions, scoring/business rules |
+| **3** | [API & Presentation](./phase-03-integration.md) | `pending` | 1.5h | Endpoints, route handlers, UI components & tables |
+| **4** | [Verification & Polish](./phase-04-verification.md) | `pending` | 1h | E2E test suite, seeders, edge cases & rollback |
+
+---
+
+## 5. Cross-Cutting Concerns
+- **Security & RBAC:** [Permission checks, token verification, tenant isolation]
+- **Performance & Query Optimization:** [Index usage, pagination, N+1 query prevention]
+- **Observability:** [Structured logging, error boundary, audit logging]
+
+---
+
+## 6. Reality Validation Gate Checklist
+- [ ] All file paths and imports verified against actual repository tree.
+- [ ] All affected call-sites accounted for (zero dangling usages).
+- [ ] Backward compatibility verified (safe defaults for existing database records).
+- [ ] Rollback strategy defined if any phase encounters a blocker.
+
+---
+
+## 7. Handoff to Execution
+Plan is validated and ready. Run `/cook` to begin phased, atomic implementation starting from Phase 1.
 ```
 
 ---
 
-### 2. Phase Detail Template (`plans/<YYYYMMDD>-<slug>/phase-01-<name>.md`)
+### 2. Comprehensive Phase Detail Template (`plans/<YYYYMMDD>-<slug>/phase-NN-<name>.md`)
+
+> **Note:** Every phase file MUST follow this comprehensive 11-section format. Do NOT truncate or omit sections.
 
 ```markdown
 ---
 phase: 1
-title: "[Phase Title]"
-status: pending
-priority: P1
-dependencies: []
+title: "[Phase Title, e.g. Foundation & Database Schemas]"
+status: pending  # pending | in-progress | completed | cancelled
+priority: P1     # P1 | P2 | P3
+effort: 1.5h
+dependencies: [] # Preceding phase files, e.g. [./phase-01-foundation.md]
 ---
 
 # Phase [N]: [Phase Title]
 
-## 1. Overview
-[1-2 sentences describing what this phase delivers and why it comes at this step]
+## 1. Phase Overview & Objective
+[2-3 sentences describing what this phase delivers, its technical significance, and why it is sequenced at this stage]
 
-## 2. Affected Files & Actions
-- **[NEW]** [`src/types/feature.ts`](file:///path/to/src/types/feature.ts)
-  - Export `FeatureDTO`, `FeatureConfig`
-- **[MODIFY]** [`src/models/schema.ts`](file:///path/to/src/models/schema.ts)
-  - Add `status` enum field with default value
+- **Status:** `pending`
+- **Target Deliverable:** [Clear observable output, e.g. applied migration, exported types]
 
-## 3. Step-by-Step Implementation
-1. [Step 1: Define types and interfaces]
-2. [Step 2: Add validation guards / assertions]
-3. [Step 3: Export symbols in barrel index file]
+---
 
-## 4. Phase Verification & Test Command
-- **Test Command:** `npm test -- tests/types/feature.test.ts`
-- **Acceptance Criteria:**
-  - [ ] Compiles with zero TypeScript / lint errors (`npm run type-check`)
-  - [ ] Unit test passes 100%
+## 2. Context & Codebase Grounding
+- **Related Existing Code:**
+  - `path/to/existing/model.py` (line XX-YY): [Current behavior]
+  - `path/to/existing/service.py`: [Current callers]
+- **Key Insights & Assumptions:**
+  - [Insight 1 discovered during codebase inspection]
+  - [Assumption validated against real files]
+
+---
+
+## 3. Requirements & Scope Boundaries
+- **Functional Requirements:**
+  - [ ] [Requirement 1]
+  - [ ] [Requirement 2]
+- **Non-Functional Requirements:**
+  - Performance: [Latency / memory / query count target]
+  - Compatibility: [Zero downtime, backward-compatible schema]
+- **Non-Goals / Out of Scope:**
+  - [What is explicitly NOT done in this phase to prevent scope creep]
+
+---
+
+## 4. Architecture & Data Flow
+
+\`\`\`mermaid
+sequenceDiagram
+    participant C as Caller
+    participant S as Service
+    participant R as Repository/DB
+    C->>S: execute(payload)
+    S->>R: persist()
+    R-->>S: record
+    S-->>C: result
+\`\`\`
+
+---
+
+## 5. Related Code Files & Concrete Contract Specifications
+
+List affected files with explicit tags and exact repository paths:
+
+### `[MODIFY]` `apps/core/models.py`
+- **Description:** [Brief summary of modifications]
+- **Concrete Code Signatures / Schema Diff:**
+\`\`\`python
+# Specify exact fields, types, and defaults
+class ExampleModel(models.Model):
+    new_field = models.PositiveIntegerField(default=0, help_text="...")
+    excess_points = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+\`\`\`
+
+### `[NEW]` `apps/core/types.ts`
+- **Description:** [New contract interfaces]
+- **Concrete Type Definitions:**
+\`\`\`typescript
+export interface ExampleDTO {
+  id: string;
+  quantity: number;
+  excessQuantity: number;
+}
+\`\`\`
+
+### `[DELETE]` `apps/core/legacy.py`
+- **Description:** [Reason for deletion and confirmed zero usages]
+
+---
+
+## 6. Step-by-Step Implementation Guide
+
+1. **Step 1: [Action Name]**
+   - File: `path/to/file`
+   - Detailed Instruction: [Explain exact logic, calculation, or condition to add]
+   - Edge Case Handling: [How null, 0, or invalid input is handled]
+
+2. **Step 2: [Action Name]**
+   - File: `path/to/file`
+   - Detailed Instruction: [Explain step]
+
+3. **Step 3: [Action Name]**
+   - Apply migrations or rebuild exports.
+
+---
+
+## 7. Task Checklist
+- [ ] Task 1: Update schema / models
+- [ ] Task 2: Implement core business logic in service
+- [ ] Task 3: Expose fields in serializer / DTO
+- [ ] Task 4: Export new public symbols
+
+---
+
+## 8. TDD Verification Matrix & Quality Gate
+
+- **Target Test Files:**
+  - `tests/unit/test_example_service.py`
+  - `tests/integration/test_example_flow.py`
+- **Verification Commands:**
+  - Unit Tests: `pytest tests/unit/test_example_service.py -v`
+  - Typecheck: `npm run type-check` or `mypy apps/`
+  - Lint: `flake8` or `eslint`
+- **Test Scenarios Matrix:**
+
+| Scenario | Input | Expected Output | Failure Guard |
+| :--- | :--- | :--- | :--- |
+| **Standard Happy Path** | Valid normal data | Returns `status: 'success'` | Fails if null |
+| **Boundary / Limit Exceeded** | Data exceeding quota | Splits standard & excess | Fails if blocked |
+| **Idempotency** | Duplicate submit key | Returns existing record | Fails if duplicate created |
+
+---
+
+## 9. Risk Assessment & Failure Modes
+- **Potential Risk 1:** [e.g. Migration lock on large table]
+  - **Mitigation:** [e.g. Add column with default in separate non-blocking statement]
+- **Potential Risk 2:** [e.g. Race condition during concurrent submission]
+  - **Mitigation:** [e.g. Database row locking via `select_for_update()`]
+- **Rollback Procedure:**
+  - Revert step: `python manage.py migrate app <prev_migration>`
+  - Git revert target: Revert commits associated with Phase [N]
+
+---
+
+## 10. Security, Concurrency & Data Integrity
+- **Authentication & Authorization:** [Verify permission check]
+- **Data Integrity:** [Atomic transaction boundaries via `transaction.atomic()`]
+- **Input Sanitization:** [Validation schema enforcing boundary values]
+
+---
+
+## 11. Handoff & Next Steps
+- **Prerequisites Satisfied for Next Phase:** [What Phase N+1 needs that this phase delivers]
+- **Next Phase Trigger:** Proceed to `phase-02-[name].md` via `/cook`.
 ```
 
 ---
 
 ## 🛑 Plan Boundaries & Anti-Patterns
 
-- **DO NOT** write full implementation code inside plan files (keep snippets to signatures and contracts).
-- **DO NOT** create a plan directory without individual `phase-*.md` files when work spans 2+ phases.
-- **DO NOT** proceed to code implementation without user approval of the master plan.
+- **DO NOT** write monolithic single-file plans when work spans 2 or more distinct phases (use `--single` only for trivial edits).
+- **DO NOT** write brief 30-line phase files. Each phase must contain concrete code signatures, data flows, and test matrices.
+- **DO NOT** omit YAML frontmatter and `status` fields from `plan.md` or `phase-*.md`.
+- **DO NOT** use raw filenames as link text in the master phases table (use descriptive names like `[Foundation & Contracts](./phase-01-foundation.md)`).
+- **DO NOT** hallucinate file paths or libraries not present in the workspace.
+- **DO NOT** start execution before the master plan is reviewed and approved.

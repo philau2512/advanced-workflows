@@ -1,167 +1,197 @@
 ---
-description: ♻️ Safe code refactoring workflow. Improve structure, readability, and maintainability without changing intended behavior.
+description: ♻️ Behavior-Preserving Refactoring, Clean Code & Safe File Splitting Engine. Refactor code structure, audit code health against 16 clean-code dimensions, or safely split oversized files with zero behavioral drift.
+argument-hint: "[target-path] [--audit] [--split] [--changed] [--strict] [--tdd]"
 ---
 
-# /refactor - Behavior-Preserving Refactor Mode
+# /refactor - Behavior-Preserving Refactor, Clean Code & File-Splitting Engine
 
 $ARGUMENTS
 
-## Purpose & Core Rule
+---
 
-Activates REFACTOR mode for structural improvements without altering user-visible or external behavior.
+## 🎯 Purpose & Core Principles
 
-> **REFACTOR = CHANGE THE CODE SHAPE, KEEP THE BEHAVIOR CONTRACT**
+Activates **REFACTOR & CLEAN CODE MODE** to safely improve code readability, cohesion, architecture boundaries, and maintainability without altering external behavior.
 
-- Improve structure, cohesion, separation of concerns, and naming clarity.
-- Reduce duplication, control flow complexity, and coupling.
-- **Strictly behavior-preserving:** Do NOT add features, change APIs, or mix bug fixes into the refactor pass. (Use `/enhance` or `/debug` if behavior must change).
+> **IRON INVARIANTS:**
+> 1. **STRICTLY BEHAVIOR-PRESERVING:** Improve code shape, preserve behavior contracts. Never add features, modify public APIs, change error payloads, or alter DB persistence semantics.
+> 2. **NO TYPE REGRESSION & BOUNDARY INTEGRITY:** Never replace strong types with `any`/`unknown`. Preserve ORM schemas, `@Transactional` boundaries, auth guards, and secret containment.
+> 3. **COPY-FIRST & GRADUAL REPLACEMENT:** When splitting files, NEVER delete original code prematurely. Copy to new files -> import into original -> replace unit-by-unit -> verify -> cleanup.
+> 4. **BARREL RE-EXPORT GUARANTEE:** The original file path must remain active and re-export all extracted symbols to guarantee zero breaking changes for external callers.
+> 5. **TEST-VERIFIED ATOMIC STEPS:** Establish characterization tests before non-trivial edits; verify syntax, types, and tests after every single extraction.
 
 ---
 
-## When to Use
-
-- **Use when:** Modules are oversized/mixed-responsibility, duplicate logic exists, naming is misleading, dependencies violate layers, or code requires cleanup before adding features.
-- **Do not use:** When adding new functional capabilities or fixing runtime bugs.
-
----
-
-## Supported Intents
+## ⚙️ Argument Parsing & Usage Modes
 
 ```text
-/refactor auth service
-/refactor checkout flow without changing behavior
-/refactor giant user component into smaller pieces
-/refactor duplicated validation logic
-/refactor api client structure
-/refactor state management in dashboard
-/refactor billing module for maintainability
-/refactor before adding role permissions
+# Standard Refactor (Extract functions, reduce nesting, improve naming):
+/refactor <path/to/file or module> [--tdd] [--changed]
+
+# Clean-Code Inspection & Audit:
+/refactor --audit <file or directory> [--strict]
+
+# Safe File-Splitting (Splitting oversized >500 LOC files):
+/refactor --split <path/to/large-file> [--out-dir <dir>]
 ```
 
----
-
-## Safety Contract & Boundaries
-
-### Preserve by Default
-- Public API signatures, routes, request/response formats, and database/persistence semantics.
-- Exported interfaces, function inputs/outputs, error contracts, and timing/order guarantees.
-- **Type-Safety & Generics:** Never weaken TypeScript types to `any`/`unknown` or bypass generic inference during restructuring.
-- **Database Schema & Transaction Integrity:** Refactoring ORM entities must NEVER trigger unreviewed schema migrations. Never move database operations outside of their atomic `@Transactional` or `db.transaction()` boundary.
-- **Security & Secret Containment:** Never expose server-only variables, secret keys, or bypass input sanitizers/validators during extraction.
-
-### Requires Explicit User Approval to Alter
-- DB schemas, migrations, endpoints, UI workflows, business logic rules, error payloads, or storage layouts.
+### Flags:
+- `--audit`: Read-only inspection; generates a prioritized findings table (P1/P2/P3) without modifying files.
+- `--split`: Engages the Staged File-Splitting protocol to decompose monolithic files into layered architectures.
+- `--changed`: Restricts refactoring scope strictly to git-modified files and direct callers.
+- `--strict`: Includes lower-priority maintainability debt, minor naming, and style inconsistencies.
+- `--tdd`: Enforces characterization tests before modifying logic and runs targeted tests after each step.
 
 ---
 
-## Refactor Categories
+## 🔬 Mode A: Clean Code Refactoring & Audit
 
-| Category | Typical Trigger | Target Action |
+### Severity Classification:
+- **P1 (Critical):** Drifting business/security invariants, hidden mutations, broken transaction boundaries, untyped leaks (`as any`).
+- **P2 (Major):** High cyclomatic complexity (>3 nesting levels), domain duplication, mixed architectural concerns, parameter clusters (>3 params).
+- **P3 (Minor):** Local naming debt, redundant 1-use private wrappers, stale narrative comments, minor colocation debt.
+
+### The 16 Clean-Code Dimensions:
+
+| Dimension | Target Defect | Safe Refactoring Pattern |
 | :--- | :--- | :--- |
-| **1. Structural Extraction** | Large files, monolithic functions, mixed view/logic | Extract pure helpers, hooks, domain services, or child components |
-| **2. Duplication Reduction** | Repeated transformations, validation, error handlers | Centralize pure utilities, shared schemas, or reusable helpers |
-| **3. Boundary Cleanup** | Leaking layers, dump utilities, circular dependencies | Move logic to owning domain, enforce clean dependency direction |
-| **4. Naming & Intent** | Misleading or overly generic names (`data`, `handle`) | Rename symbols to match domain, extract predicates into boolean helpers |
-| **5. Control Flow** | Deep nesting, complex branching, implicit state | Use guard clauses, early returns, explicit state transition tables |
+| **1. Single Responsibility (SRP)** | Functions doing >1 thing; mixing UI + DB | Extract domain helpers, custom hooks, or dedicated services. |
+| **2. Naming & Intent** | Generic names (`data`, `temp`, `handle`) | Rename to domain-specific verbs/nouns reflecting true intent. |
+| **3. Functions & Parameters** | Parameter clusters (>3 parameters) | Group into a typed Options / DTO object. |
+| **4. Nesting & Control Flow** | Deep indentation (>3 levels), nested `if/else` | Apply guard clauses and early returns. |
+| **5. Harmful Duplication (DRY)**| Repeated business rules, validation logic | Consolidate under single owner (preserve coincidental similarity). |
+| **6. Abstraction (YAGNI/KISS)** | 1-use speculative wrappers / over-engineering | Inline unnecessary abstractions; simplify indirection. |
+| **7. Error Handling** | Swallowed errors (`catch {}`), lost context | Explicit re-throw, retain stack trace, or structured domain error. |
+| **8. State & Side Effects** | Implicit mutations, hidden cache updates | Make mutations explicit; separate pure calculations from I/O. |
+| **9. Dead Code & Comments** | Zombie code, commented-out blocks, obvious comments | Delete outright (git preserves history); keep "why" comments only. |
+| **10. Colocation & Placement** | Variables declared far from usage, scattered constants | Colocate variables near usage; extract magic constants to module top. |
+| **11. Data Transformations** | Mutating input arguments directly | Enforce immutability; centralize DTO ↔ Domain ↔ DB mappings. |
+| **12. Command-Query Separation**| Functions querying data while mutating state | Separate pure queries (no side effects) from state-mutating commands. |
+| **13. Type Safety & Nullability**| `any`, loose casts, missing return types | Use explicit interfaces, discriminators, optional chaining (`?.`), and `??`. |
+| **14. Async / Promises** | Callback hell, mixing `.then()` with `async/await` | Standardize on clean `async/await` with localized `try/catch`. |
+| **15. Testability** | Hardcoded clocks, network, or global singletons | Inject dependencies or parameterize external inputs. |
+| **16. Architecture Boundaries** | Lower layer importing higher layer, leaky transport | Enforce top-down dependency flow; decouple transport from domain. |
+
+### Anti-Patterns to Avoid:
+- Mechanical application of patterns (creating 1-to-1 interfaces or repositories for everything).
+- Fragmenting readable code into dozens of disconnected 2-line micro-helpers.
+- Deduplicating logic that looks identical but belongs to distinct business domains.
+- Weakening existing test assertions to force refactored code to pass.
 
 ---
 
-## Refactor Protocol
+## 📁 Mode B: Staged File-Splitting Protocol (`--split`)
 
-### Phase 1: Understand Current Behavior
-- Trace execution paths, dependencies, side effects, and existing tests. (Run `/analyze` first if unfamiliar).
+### Architecture Layer Matrix:
 
-### Phase 2: Define Concrete Objective
-- State explicitly what structural problem is being solved and what must stay identical.
+#### Frontend Architecture (React / Next.js / Vue):
+- `features/` → Domain-specific modules & orchestration (**Primary**)
+- `components/` → UI presentation only (**STRICT: No direct API calls, no DB access**)
+- `hooks/` → Reusable stateful & lifecycle logic (**STRICT: No JSX return**)
+- `services/` → API clients & remote data fetching
+- `store/` → Global / client state management
+- `utils/` → Pure helper functions & stateless formatters
 
-### Phase 3: Identify Safety Boundaries
-- Map exported symbols, callers, database transactions, and critical order of side effects.
-
-### Phase 4: Strategy Selection
-- Choose the smallest safe step (Priority: Rename → Extract helper → Extract module/hook → Split file → Reorganize layer).
-
-### Phase 5: Execute in Atomic Steps
-- Refactor in small, verifiable units. Verify references and syntax after each step.
-
-### Phase 6: Validate Behavior Parity
-- Run existing tests. Verify identical inputs produce identical outputs, state transitions, and error paths.
-
-### Phase 7: Document Residual Risk
-- Detail improvements, preserved contracts, remaining debt, and test status.
+#### Backend Architecture (Node / Express / NestJS / FastAPI / Spring):
+- `controller/router` → Request parsing, validation, HTTP response (**STRICT: No business logic**)
+- `service/` → Core business logic & orchestration (**Sits between controller and repository**)
+- `repository/dao` → Database queries & persistence (**STRICT: No business rules**)
+- `model/entity` → Database schemas & domain entities
+- `dto/schema` → Request/response contracts & transport types
+- `utils/` → Pure calculation helpers & formatters
 
 ---
 
-## Behavior Preservation Checklist
+### Staged Splitting Workflow:
 
-- [ ] Identical input/output mapping for all functions.
-- [ ] Routes, events, and lifecycle triggers reach unchanged outcomes.
-- [ ] Validation rules, persistence operations, and error states preserved.
-- [ ] No unintended side effects or altered execution ordering.
+```
+┌────────────────────────┐     ┌────────────────────────┐     ┌────────────────────────┐
+│ 1. Pre-Scan & Chunking │ ──► │ 2. Plan Architecture   │ ──► │ 3. Copy-First Extract  │
+│    (Domain groups)     │     │    (FE/BE Layer Matrix)│     │    (DO NOT delete old) │
+└────────────────────────┘     └────────────────────────┘     └───────────┬────────────┘
+                                                                          │
+┌────────────────────────┐     ┌────────────────────────┐                 ▼
+│ 6. Guarded Cleanup     │ ◄── │ 5. 8-Point Gate Check  │ ◄── ┌────────────────────────┐
+│    (Remove old code)   │     │    (Parity & Zero Leaks│     │ 4. Wire & Gradual Repl.│
+└────────────────────────┘     └────────────────────────┘     │    (Unit-by-unit)      │
+                                                              └────────────────────────┘
+```
+
+1. **Pre-Scan & Chunking:**
+   - For files >800 LOC: Group functions by domain feature / lifecycle before extracting.
+2. **Target File Planning:**
+   - Define target files following the Architecture Layer Matrix above.
+   - Enforce unidirectional top-down imports; strictly forbid circular dependencies.
+3. **Copy-First Extraction:**
+   - Copy types, helpers, and services into new files. **DO NOT delete original code yet.**
+   - Extract in sequence: Types (`.types.ts`) → Pure Utils (`.utils.ts`) → Services/Hooks → Subcomponents.
+4. **Wiring & Gradual Replacement:**
+   - Import new modules back into the original file.
+   - Replace old internal references ONE logical unit at a time.
+5. **Barrel Re-Export Guarantee:**
+   - Keep the original file path active. Re-export all extracted public symbols from it so existing consumers never break.
 
 ---
 
-## Anti-Patterns to Avoid
+### 🛡️ The 8-Point Multi-Level Self-Verification Checklist:
 
-- Mixing feature enhancements or bug fixes into refactor passes.
-- Introducing clever design patterns or abstract indirection without concrete benefit.
-- Deduplicating logic that looks similar but belongs to distinct business domains.
-- Silently renaming public APIs or exported contracts.
-- Deleting comments containing important rationale or safety constraints.
+Before running cleanup, verify all 8 gates:
+- [ ] **1. Syntax & Circular Dependencies:** Zero undefined symbols; no circular imports (`A -> B -> A`). Shared types moved to dedicated `types.ts`.
+- [ ] **2. Execution Order & Flow:** Function call sequence, middleware pipeline, and argument mappings remain 100% identical.
+- [ ] **3. State & Closure Integrity:** No lost state mutations, closures retain access to required variables, logging/caching calls preserved.
+- [ ] **4. Async & Concurrency:** `await` chains intact; no race conditions or unhandled rejections introduced.
+- [ ] **5. Server/Client Boundary Safety:** In fullstack frameworks (Next.js/Remix), NEVER import server-only logic, DB clients, or environment secrets into `"use client"` components.
+- [ ] **6. CSS Cascade & DOM Hierarchy:** Subcomponents preserve CSS specificity, flex/grid parent-child relationships, and Tailwind class priorities.
+- [ ] **7. Barrel Re-Export Integrity:** All external consumers import seamlessly from the original path with zero regressions.
+- [ ] **8. Compiler & Test Gate:** `tsc --noEmit` (or language linter) is clean (0 errors) and characterization tests pass 100%.
 
 ---
 
-## Output Formats
+## 📋 Standard Output Templates
 
-### Standard Format
+### 1. Clean Code Audit Report (`--audit`)
 
 ```markdown
-## ♻️ Refactor Report: [Target]
+## 📋 Clean Code Audit: [Target Scope]
 
-### Objective & Category
-- **Target:** [Module/File]
-- **Category:** [Extraction / Duplication / Boundary / Naming / Control Flow]
-- **Goal:** [Specific maintenance/readability benefit]
+### Findings Matrix
+| ID | Sev | Dimension | Location | Issue & Evidence | Proposed Refactor | Risk |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `CC-01` | P1 | State/Side-Effects | `src/auth.ts:45` | Global cache mutation inside getter | Extract to explicit Command | Low |
+| `CC-02` | P2 | Nesting & Flow | `src/order.ts:88` | 4-level nested if/else logic | Refactor to Guard Clauses | Low |
 
-### Preserved Contracts
-- [Public API, error handling, state/persistence rules kept stable]
-
-### Changes Made
-| Area | Modification | Purpose |
-| :--- | :--- | :--- |
-| `src/...` | [Extracted helper / Renamed / Decoupled] | [Why this was changed] |
-
-### Validation & Residual Risk
-- **Tests & Parity:** [Test status / verified parity checks]
-- **Risk Level:** Low | Medium | High
-- **Next Follow-up:** `/test` | `/review` | `/enhance`
+### Refactor Strategy & Exclusions
+1. **Prioritized Action Plan:** [Step 1 (P1) -> Step 2 (P2)]
+2. **Intentional Exclusions:** [Flagged area kept as-is + rationale why abstraction is premature]
 ```
 
-### Short Format
+### 2. Refactor & Splitting Execution Report
 
 ```markdown
-## ♻️ Refactor: [Target]
-- **Goal:** [One line]
-- **Preserved:** [Contracts kept stable]
-- **Changes:** [Key structural modifications]
-- **Validation:** [Test/syntax check result]
-- **Risk:** Low | Medium | High
+## ♻️ Refactoring Report: [Target Module / File]
+
+### 1. Scope & Execution Mode
+- **Target:** `[path/to/file]`
+- **Mode:** [Standard Refactor / File Split]
+- **Verification Baseline:** [Pre-refactor test: PASS]
+
+---
+
+### 2. Summary of Structural Changes
+
+| File / Component | Layer / Change Type | Improvements Applied |
+| :--- | :--- | :--- |
+| `src/order.types.ts` | Types Layer | Extracted shared DTOs & Interfaces |
+| `src/order.utils.ts` | Utils (Pure) | Extracted `calculateDiscount()` & formatting helpers |
+| `src/order.service.ts` | Domain Service | Encapsulated DB persistence & payment orchestration |
+| `src/order.ts` | Barrel Entrypoint | Re-exports all public symbols; delegates to service |
+
+---
+
+### 3. Verification & Safety Verification
+- [x] Zero circular dependencies detected.
+- [x] Server/Client boundary intact (No secrets leaked to UI).
+- [x] Public contracts & barrel re-exports verified with caller test suite.
+- **Type Check:** `tsc --noEmit` -> **CLEAN (0 errors)**
+- **Test Suite:** `npm test` -> **PASS (All green)**
 ```
-
----
-
-## Handoff Matrix & Next Steps
-
-| Target Goal | Workflow |
-| :--- | :--- |
-| Verify unchanged behavior with tests | `/test` or `/test-audit` |
-| Audit structural complexity & quality | `/review` |
-| Deep dive into an unclear hotspot | `/analyze` |
-| Add new features on clean code | `/enhance` |
-
----
-
-## Definition of Done
-
-1. Concrete structural goal stated and executed.
-2. Behavior contract explicitly verified and preserved.
-3. Changes scoped, tested, and documented with residual risks noted.
