@@ -18,8 +18,10 @@ Activates **IMPLEMENTATION MODE** to systematically execute technical plans with
 > 2. **STRICT SCOPE CONFINEMENT:** Touch ONLY the files enumerated in the active phase's affected files list. Zero unrelated refactoring or cleanup.
 > 3. **INCREMENTAL VERIFICATION GATE:** A phase is NOT complete until its declared test command passes 100%. Never advance on red tests.
 > 4. **DEADLOCK PROTECTION (MAX 3 ATTEMPTS):** If a test gate fails, auto-retry targeted fixes at most 3 times. If still failing, STOP and report the blocker to the user. Never loop indefinitely.
-> 5. **DURABLE STATUS TRACKING:** Mutate phase status (`status: pending -> in-progress -> completed`) in both the phase file and the master `plan.md` index upon verification.
-> 6. **NATIVE TOOLING ONLY:** NEVER use terminal commands (`echo`, `cat >`, redirection) to edit files. ALWAYS use native IDE tools (`replace_file_content`, `write_to_file`).
+> 5. **CLEAN ROLLBACK ON DEADLOCK:** If a phase cannot pass tests within 3 attempts, cleanly revert or stash touched files to restore the phase baseline before stopping, avoiding half-broken dirty workspace state.
+> 6. **ZERO-DOWNTIME SCHEMA GUARD:** Any database schema migration must follow the Expand & Contract pattern (nullable/default columns first, no destructive immediate drops).
+> 7. **DURABLE STATUS TRACKING:** Mutate phase status (`status: pending -> in-progress -> completed`) in both the phase file and the master `plan.md` index upon verification.
+> 8. **NATIVE TOOLING ONLY:** NEVER use terminal commands (`echo`, `cat >`, redirection) to edit files. ALWAYS use native IDE tools (`replace_file_content`, `write_to_file`).
 
 ---
 

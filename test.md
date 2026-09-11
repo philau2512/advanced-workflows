@@ -28,14 +28,18 @@ Activates **UNIFIED TESTING & QUALITY MODE** to discover test coverage gaps, gen
 # 1. Test Coverage Audit (Discover gaps across FE & BE):
 /test [--fe|--be|--full] [--changed] [--write-tests] [--run]
 
-# 2. Mock API & Network Simulation:
+# 2. Flaky Test Stress Discovery (Repeated execution to expose non-determinism):
+/test --flaky [test-file] [--count 5]
+
+# 3. Mock API & Network Simulation:
 /test --mock <endpoint or feature> (e.g. /test --mock POST /api/checkout)
 
-# 3. Relational Test Data & Seeding:
+# 4. Relational Test Data & Seeding:
 /test --seed <model or domain> [--count <N>] [--locale <vi|en>]
 ```
 
 ### Flags:
+- `--flaky`: Executes targeted tests repeatedly (default: 5 runs) under concurrent load to isolate flaky tests and shared state leaks.
 - `--write-tests`: Generates real automated test files (Vitest, Jest, Playwright) for identified coverage gaps.
 - `--mock`: Creates contract-faithful MSW (Mock Service Worker) handlers or fixture responses.
 - `--seed`: Generates relational DB seed scripts or JSON fixtures with foreign-key integrity.
@@ -121,11 +125,28 @@ export const handlers = [
 Generates typed, relational fixtures or idempotent DB seeders (Prisma, Drizzle, TypeORM, raw SQL):
 
 ### 5 Seeding Best Practices:
-1. **Relational Top-Down Order:** Seed parents before children (`User` $\rightarrow$ `Organization` $\rightarrow$ `Order` $\rightarrow$ `OrderItem`).
+1. **Relational Top-Down Order:** Seed parents before children (`User` -> `Organization` -> `Order` -> `OrderItem`).
 2. **Reverse Cleanup Order:** When resetting data, delete children before parents to avoid foreign-key constraint violations.
 3. **Idempotent Upserts:** Always use `upsert` or `ON CONFLICT (id) DO UPDATE/NOTHING` instead of raw `insert` to ensure scripts can be re-run safely.
-4. **Localized Realism:** Use localized Faker generators (`vi` for Vietnamese names, addresses, phone numbers; `en_US` for English).
-5. **Batching for High Volumes:** When generating $>1000$ records, batch database inserts in chunks of 500 records to prevent memory exhaustion and timeout.
+4. **Deterministic Sequences:** Use incrementing counters or seeded random generation for foreign keys and unique constraints.
+5. **Batching for High Volumes:** When generating >1000 records, batch database inserts in chunks of 500 records to prevent memory exhaustion and timeout.
+6. **Environment Guards:** Abort immediately if `process.env.NODE_ENV === 'production'`.
+
+---
+
+## 🔁 Mode D: Flaky Test Isolation & Non-Determinism Defense (`--flaky`)
+
+Runs targeted tests in repeated tight loops (e.g. 5–10 iterations) to expose hidden race conditions and state leakage.
+
+### 4 Root Causes of Flaky Tests & Defenses:
+1. **Unmocked Time & Clocks:** Direct calls to `Date.now()` or `new Date()` causing failures across midnight, leap years, or timezones.
+   - *Fix:* Freeze clock with fake timers (`vi.useFakeTimers()`); advance explicitly via `vi.advanceTimersByTime(ms)`.
+2. **Asynchronous Polling & Arbitrary Sleep:** Using `await sleep(100)` hoping background operations finish in time.
+   - *Fix:* Replace arbitrary sleep with deterministic waiting: `await waitFor(() => expect(...))` or Playwright auto-retrying locators.
+3. **Leaky Test State & Shared Fixtures:** Mutation of shared module singletons or DB rows without cleanup.
+   - *Fix:* Enforce test isolation via `beforeEach` / `afterEach` with `vi.clearAllMocks()`, `vi.resetModules()`, and transactional DB rollbacks.
+4. **Unseeded Randomness:** Using `Math.random()` or unseeded faker libraries producing payloads that occasionally fail validation.
+   - *Fix:* Seed pseudo-random generators (e.g. `faker.seed(1234)`) so failures can be replayed identically.
 
 ---
 

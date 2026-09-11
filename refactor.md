@@ -1,9 +1,9 @@
 ---
-description: ♻️ Behavior-Preserving Refactoring, Clean Code & Safe File Splitting Engine. Refactor code structure, audit code health against 16 clean-code dimensions, or safely split oversized files with zero behavioral drift.
-argument-hint: "[target-path] [--audit] [--split] [--changed] [--strict] [--tdd]"
+description: ♻️ Behavior-Preserving Refactoring & Safe File Splitting Engine. Safely refactor code structure, reduce complexity, consolidate domain duplication, or split oversized files with zero behavioral drift.
+argument-hint: "[target-path] [--split] [--changed] [--strict] [--tdd]"
 ---
 
-# /refactor - Behavior-Preserving Refactor, Clean Code & File-Splitting Engine
+# /refactor - Behavior-Preserving Refactoring & Safe File-Splitting Engine
 
 $ARGUMENTS
 
@@ -11,7 +11,7 @@ $ARGUMENTS
 
 ## 🎯 Purpose & Core Principles
 
-Activates **REFACTOR & CLEAN CODE MODE** to safely improve code readability, cohesion, architecture boundaries, and maintainability without altering external behavior.
+Activates **REFACTOR & EXECUTION MODE** to safely improve code readability, cohesion, architecture boundaries, and maintainability without altering external behavior.
 
 > **IRON INVARIANTS:**
 > 1. **STRICTLY BEHAVIOR-PRESERVING:** Improve code shape, preserve behavior contracts. Never add features, modify public APIs, change error payloads, or alter DB persistence semantics.
@@ -19,63 +19,53 @@ Activates **REFACTOR & CLEAN CODE MODE** to safely improve code readability, coh
 > 3. **COPY-FIRST & GRADUAL REPLACEMENT:** When splitting files, NEVER delete original code prematurely. Copy to new files -> import into original -> replace unit-by-unit -> verify -> cleanup.
 > 4. **BARREL RE-EXPORT GUARANTEE:** The original file path must remain active and re-export all extracted symbols to guarantee zero breaking changes for external callers.
 > 5. **TEST-VERIFIED ATOMIC STEPS:** Establish characterization tests before non-trivial edits; verify syntax, types, and tests after every single extraction.
+> 6. **AUDIT FIRST ON UNFAMILIAR CODE:** For codebase-wide inspection, debt catalogs, or scorecards before refactoring, run `/audit` first.
 
 ---
 
 ## ⚙️ Argument Parsing & Usage Modes
 
 ```text
-# Standard Refactor (Extract functions, reduce nesting, improve naming):
+# Standard Refactor (Extract functions, reduce nesting, consolidate logic, improve naming):
 /refactor <path/to/file or module> [--tdd] [--changed]
 
-# Clean-Code Inspection & Audit:
-/refactor --audit <file or directory> [--strict]
-
-# Safe File-Splitting (Splitting oversized >500 LOC files):
+# Safe File-Splitting (Splitting oversized >500 LOC monolithic files):
 /refactor --split <path/to/large-file> [--out-dir <dir>]
 ```
 
 ### Flags:
-- `--audit`: Read-only inspection; generates a prioritized findings table (P1/P2/P3) without modifying files.
 - `--split`: Engages the Staged File-Splitting protocol to decompose monolithic files into layered architectures.
 - `--changed`: Restricts refactoring scope strictly to git-modified files and direct callers.
-- `--strict`: Includes lower-priority maintainability debt, minor naming, and style inconsistencies.
+- `--strict`: Enforces strict clean-code cleanup, including minor naming debt and micro-optimizations.
 - `--tdd`: Enforces characterization tests before modifying logic and runs targeted tests after each step.
 
 ---
 
-## 🔬 Mode A: Clean Code Refactoring & Audit
+## 🔬 Mode A: Targeted Logic Refactoring
 
-### Severity Classification:
-- **P1 (Critical):** Drifting business/security invariants, hidden mutations, broken transaction boundaries, untyped leaks (`as any`).
-- **P2 (Major):** High cyclomatic complexity (>3 nesting levels), domain duplication, mixed architectural concerns, parameter clusters (>3 params).
-- **P3 (Minor):** Local naming debt, redundant 1-use private wrappers, stale narrative comments, minor colocation debt.
+### Core Transformation Playbook:
 
-### The 16 Clean-Code Dimensions:
+1. **Reduce Nesting & Cognitive Complexity:**
+   - Invert `if/else` checks into guard clauses with early `return`, `continue`, or `throw`.
+   - Flatten nested ternary expressions and nested callbacks into linear pipelines or `async/await`.
 
-| Dimension | Target Defect | Safe Refactoring Pattern |
-| :--- | :--- | :--- |
-| **1. Single Responsibility (SRP)** | Functions doing >1 thing; mixing UI + DB | Extract domain helpers, custom hooks, or dedicated services. |
-| **2. Naming & Intent** | Generic names (`data`, `temp`, `handle`) | Rename to domain-specific verbs/nouns reflecting true intent. |
-| **3. Functions & Parameters** | Parameter clusters (>3 parameters) | Group into a typed Options / DTO object. |
-| **4. Nesting & Control Flow** | Deep indentation (>3 levels), nested `if/else` | Apply guard clauses and early returns. |
-| **5. Harmful Duplication (DRY)**| Repeated business rules, validation logic | Consolidate under single owner (preserve coincidental similarity). |
-| **6. Abstraction (YAGNI/KISS)** | 1-use speculative wrappers / over-engineering | Inline unnecessary abstractions; simplify indirection. |
-| **7. Error Handling** | Swallowed errors (`catch {}`), lost context | Explicit re-throw, retain stack trace, or structured domain error. |
-| **8. State & Side Effects** | Implicit mutations, hidden cache updates | Make mutations explicit; separate pure calculations from I/O. |
-| **9. Dead Code & Comments** | Zombie code, commented-out blocks, obvious comments | Delete outright (git preserves history); keep "why" comments only. |
-| **10. Colocation & Placement** | Variables declared far from usage, scattered constants | Colocate variables near usage; extract magic constants to module top. |
-| **11. Data Transformations** | Mutating input arguments directly | Enforce immutability; centralize DTO ↔ Domain ↔ DB mappings. |
-| **12. Command-Query Separation**| Functions querying data while mutating state | Separate pure queries (no side effects) from state-mutating commands. |
-| **13. Type Safety & Nullability**| `any`, loose casts, missing return types | Use explicit interfaces, discriminators, optional chaining (`?.`), and `??`. |
-| **14. Async / Promises** | Callback hell, mixing `.then()` with `async/await` | Standardize on clean `async/await` with localized `try/catch`. |
-| **15. Testability** | Hardcoded clocks, network, or global singletons | Inject dependencies or parameterize external inputs. |
-| **16. Architecture Boundaries** | Lower layer importing higher layer, leaky transport | Enforce top-down dependency flow; decouple transport from domain. |
+2. **Parameter & DTO Encapsulation:**
+   - Replace parameter clusters (>3 parameters) with strongly-typed parameter objects or DTOs.
+   - Separate command inputs from context dependencies via dependency injection.
+
+3. **Duplication Consolidation (DRY vs AHA):**
+   - *Rule of Three:* Consolidate repeated logic only when identical code appears **>= 3 times** and shares the **same domain owner**.
+   - *AHA Invariant:* Keep coincidental similarities intact if they belong to different business subdomains to avoid premature coupling.
+
+4. **Immutability & Pure Separation:**
+   - Eliminate direct mutations of input parameters or global caches.
+   - Separate pure domain calculations from impure I/O operations.
 
 ### Anti-Patterns to Avoid:
-- Mechanical application of patterns (creating 1-to-1 interfaces or repositories for everything).
+- Mechanical over-abstraction (creating 1-to-1 interfaces or repositories for everything).
 - Fragmenting readable code into dozens of disconnected 2-line micro-helpers.
-- Deduplicating logic that looks identical but belongs to distinct business domains.
+- Deduplicating logic that looks identical but belongs to distinct business domains (premature abstraction).
+- Module top-level runtime side-effects (e.g., reading `process.env` or initializing network clients at module import time).
 - Weakening existing test assertions to force refactored code to pass.
 
 ---
@@ -111,7 +101,7 @@ Activates **REFACTOR & CLEAN CODE MODE** to safely improve code readability, coh
 └────────────────────────┘     └────────────────────────┘     └───────────┬────────────┘
                                                                           │
 ┌────────────────────────┐     ┌────────────────────────┐                 ▼
-│ 6. Guarded Cleanup     │ ◄── │ 5. 8-Point Gate Check  │ ◄── ┌────────────────────────┐
+│ 6. Guarded Cleanup     │ ◄── │ 5. 10-Point Gate Check │ ◄── ┌────────────────────────┐
 │    (Remove old code)   │     │    (Parity & Zero Leaks│     │ 4. Wire & Gradual Repl.│
 └────────────────────────┘     └────────────────────────┘     │    (Unit-by-unit)      │
                                                               └────────────────────────┘
@@ -133,9 +123,9 @@ Activates **REFACTOR & CLEAN CODE MODE** to safely improve code readability, coh
 
 ---
 
-### 🛡️ The 8-Point Multi-Level Self-Verification Checklist:
+### 🛡️ The 10-Point Multi-Level Self-Verification Checklist:
 
-Before running cleanup, verify all 8 gates:
+Before running cleanup, verify all 10 gates:
 - [ ] **1. Syntax & Circular Dependencies:** Zero undefined symbols; no circular imports (`A -> B -> A`). Shared types moved to dedicated `types.ts`.
 - [ ] **2. Execution Order & Flow:** Function call sequence, middleware pipeline, and argument mappings remain 100% identical.
 - [ ] **3. State & Closure Integrity:** No lost state mutations, closures retain access to required variables, logging/caching calls preserved.
@@ -144,35 +134,19 @@ Before running cleanup, verify all 8 gates:
 - [ ] **6. CSS Cascade & DOM Hierarchy:** Subcomponents preserve CSS specificity, flex/grid parent-child relationships, and Tailwind class priorities.
 - [ ] **7. Barrel Re-Export Integrity:** All external consumers import seamlessly from the original path with zero regressions.
 - [ ] **8. Compiler & Test Gate:** `tsc --noEmit` (or language linter) is clean (0 errors) and characterization tests pass 100%.
+- [ ] **9. Transaction & Context Propagation:** DB transactions (`tx`), Tenant ID, and request contexts propagate through all extracted services/helpers without escaping ACID boundaries.
+- [ ] **10. Test Mocking Surface & TDZ:** Existing test mocks (`jest.spyOn`, `vi.mock`) remain functional with relocated symbols; no Temporal Dead Zone (TDZ) runtime import errors from barrel circularity.
 
 ---
 
-## 📋 Standard Output Templates
-
-### 1. Clean Code Audit Report (`--audit`)
-
-```markdown
-## 📋 Clean Code Audit: [Target Scope]
-
-### Findings Matrix
-| ID | Sev | Dimension | Location | Issue & Evidence | Proposed Refactor | Risk |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `CC-01` | P1 | State/Side-Effects | `src/auth.ts:45` | Global cache mutation inside getter | Extract to explicit Command | Low |
-| `CC-02` | P2 | Nesting & Flow | `src/order.ts:88` | 4-level nested if/else logic | Refactor to Guard Clauses | Low |
-
-### Refactor Strategy & Exclusions
-1. **Prioritized Action Plan:** [Step 1 (P1) -> Step 2 (P2)]
-2. **Intentional Exclusions:** [Flagged area kept as-is + rationale why abstraction is premature]
-```
-
-### 2. Refactor & Splitting Execution Report
+## 📋 Standard Output Template
 
 ```markdown
 ## ♻️ Refactoring Report: [Target Module / File]
 
 ### 1. Scope & Execution Mode
 - **Target:** `[path/to/file]`
-- **Mode:** [Standard Refactor / File Split]
+- **Mode:** [Targeted Refactor / File Split]
 - **Verification Baseline:** [Pre-refactor test: PASS]
 
 ---
@@ -188,10 +162,12 @@ Before running cleanup, verify all 8 gates:
 
 ---
 
-### 3. Verification & Safety Verification
+### 3. Verification & Safety Gate Status
 - [x] Zero circular dependencies detected.
 - [x] Server/Client boundary intact (No secrets leaked to UI).
 - [x] Public contracts & barrel re-exports verified with caller test suite.
+- [x] Database transaction (`tx`) and request context propagated without leakage.
+- [x] Existing test mock surfaces and module loading order verified.
 - **Type Check:** `tsc --noEmit` -> **CLEAN (0 errors)**
 - **Test Suite:** `npm test` -> **PASS (All green)**
 ```

@@ -62,10 +62,10 @@ If the bug report is vague (*"payment failed"*, *"button doesn't work"*, *"500 e
 | :--- | :--- | :--- |
 | **Type 1: Runtime / Crash / Syntax** | Uncaught exceptions, `TypeError: cannot read property of undefined`, panic | Trace call stack to null/undefined dereference point. |
 | **Type 2: Logic / State Desync** | Incorrect calculations, stale closures, desynchronized UI/store | Trace reactive dependency arrays and mutation lifecycles. |
-| **Type 3: Async / Concurrency / Race** | Out-of-order responses, unhandled rejections, race conditions | Trace `await` chains, mutex locks, and network waterfalls. |
+| **Type 3: Async / Concurrency / Race** | Out-of-order responses, TOCTOU, double-spend/duplicate record, unhandled rejections | Simulate concurrent calls via `Promise.all()`; trace mutex locks, DB row locks, and network waterfalls. |
 | **Type 4: Auth / Session / CORS / SSR** | Token expiry, cookie flags (`SameSite`/`Secure`), hydration mismatch | Trace token refresh loops, CORS preflight headers, SSR/client delta. |
 | **Type 5: DB / ORM / Data Drift** | Deadlocks, dirty reads, missing schema migrations, corrupt rows | Trace query execution plan, transaction locks, and schema version. |
-| **Type 6: Build & Env Drift** | Works locally but fails in CI/Prod, OS path `\\` vs `/`, ESM vs CJS | Trace node version, path normalizers, dynamic imports, and env vars. |
+| **Type 6: Build & Env Drift** | Works locally but fails in CI/Prod, Timezone UTC vs local, OS path `\` vs `/`, case-sensitive filenames | Verify Timezone offsets, filesystem case-sensitivity, path normalizers (`path.join`), and `.env` variable completeness. |
 | **Type 7: Circular Dependency** | Runtime `[Function] is undefined`, empty exports at startup | Trace module import graph for cyclic imports (`A -> B -> A`). |
 | **Type 8: Heisenbug / Stale Cache** | Inconsistent failures, ghost HMR state, stale Redis/cache keys | Execute `--clean` cache purge; verify cache TTL and invalidation keys. |
 
@@ -76,6 +76,7 @@ If the bug report is vague (*"payment failed"*, *"button doesn't work"*, *"500 e
 Do NOT modify implementation code until reproduction is proven:
 - **Tier 1 (Automated Test - Preferred):** Write an isolated failing test (`RED`) in the test suite (e.g. `tests/regression/bug.test.ts`).
 - **Tier 2 (Script / Curl):** Prepare a minimal standalone script in the system temp directory or an exact curl command reproducing the error.
+  - *Concurrency Repro:* For race conditions, trigger parallel bursts using `Promise.all([request(), request()])` or `ab -n 10 -c 5`.
 - **Tier 3 (UI Flow):** Use browser automation tools (`agent-browser` or `chrome-profile`) to capture network traces and console logs.
 - **Tier 4 (Ghost Bug Cache Purge):** If non-reproducible, run `--clean` to eliminate stale bundler artifacts and verify if the issue persists.
 - **Tier 5 (Git Regression):** If the defect is recent, use `git log -p -n 10` or `--bisect` to identify the regression commit.
@@ -85,7 +86,7 @@ Do NOT modify implementation code until reproduction is proven:
 ### Phase 3: Backward Tracing & Dynamic Instrumentation
 
 Trace backward from crash site to data origin:
-$$\text{Crash / Failure Site} \longleftarrow \text{Data Mutation} \longleftarrow \text{Storage / Service Layer} \longleftarrow \text{Entry Point}$$
+`Crash / Failure Site <- Data Mutation <- Storage / Service Layer <- Entry Point`
 
 - **Frontend Flow:** Use `/analyze --fe <component>` to trace `User Interaction -> State Hooks -> API Call`.
 - **Backend Flow:** Use `/analyze --be <endpoint>` to trace `Route Handler -> Guard/Middleware -> Domain Service -> DB Query`.
@@ -123,7 +124,7 @@ Formulate **2 to 3 specific hypotheses** and validate against empirical code evi
 
 ### Phase 6: Verification & Multi-Surface Guard
 
-- Re-run reproduction test: Verify it turns from **RED $\rightarrow$ GREEN**.
+- Re-run reproduction test: Verify it turns from **RED -> GREEN**.
 - Run existing related test suites to verify zero regression.
 - Execute workspace typecheck (`tsc --noEmit` or language equivalent) to verify clean compilation.
 

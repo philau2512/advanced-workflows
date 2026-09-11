@@ -21,6 +21,7 @@ Activates **DEEP ARCHITECTURAL PLANNING & REALITY-CHECK MODE** to produce ground
 > 5. **ATOMIC & SEQUENCED PHASES:** Each phase must leave the repository in a working, testable state with explicit file ownership (`[NEW]`, `[MODIFY]`, `[DELETE]`).
 > 6. **TDD-FIRST VERIFICATION:** Every phase must declare its automated test commands, failure conditions, and observable acceptance criteria before implementation.
 > 7. **PLAN AUDIT GATE:** Automatically validate symbol existence and caller impacts before declaring a plan ready for `/cook`.
+> 8. **ZERO-DOWNTIME SCHEMA EVOLUTION:** Database changes must follow the Expand & Contract pattern (nullable/default column -> dual write -> backfill -> read switch -> drop old) to guarantee zero table locks or downtime.
 
 ---
 
@@ -90,10 +91,10 @@ plans/<YYYYMMDD>-<feature-slug>/
 ### Stage 2: Multi-File Directory Setup & Phased Decomposition
 - Create dedicated plan folder: `plans/<YYYYMMDD>-<slug>/`.
 - Decompose work into sequential, independently testable phases (typically 2 to 4 phases):
-  - **Phase 1: Foundation & Contracts:** Types, interfaces, DB migrations, DTOs.
+  - **Phase 1: Foundation & Contracts:** Types, interfaces, DB migrations (Expand & Contract pattern: nullable/default columns first, no destructive immediate drops), DTOs.
   - **Phase 2: Core Domain Logic:** Services, business calculations, state machines.
   - **Phase 3: Integration & Presentation:** API endpoints, UI components, wiring.
-  - **Phase 4: Polish & Edge Cases:** Error handling, logging, caching, cleanup.
+  - **Phase 4: Polish & Edge Cases:** Error handling, logging, caching, cleanup, and rollback validation.
 - Author master `plan.md` as the navigation index and delivery contract.
 - Author each `phase-NN-<name>.md` following the comprehensive 11-section standard.
 
@@ -108,7 +109,7 @@ Run the **4-Role Validation Gate** before presenting the plan:
 1. **Fact Checker:** Verify all files and imported symbols exist in the repository.
 2. **Contract Verifier:** Verify parameter and signature changes do not break existing callers.
 3. **Layer Auditor:** Verify architectural layer boundaries (no presentation logic in domain).
-4. **Safety Auditor:** Verify rollback strategy, state handling, transactions, and auth guard coverage.
+4. **Safety Auditor:** Verify rollback strategy, state handling, transactions, zero-downtime DB migrations, and auth guard coverage.
 
 ---
 

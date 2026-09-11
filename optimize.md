@@ -63,7 +63,7 @@ Activates **OPTIMIZATION MODE** to systematically improve latency, throughput, r
 
 | Category | Typical Hotspots | Evidence-Driven Solutions |
 | :--- | :--- | :--- |
-| **1. Database & Queries** | N+1 queries, unindexed filters, `SELECT *` over large tables | Eager loading (`join`/`include`), composite indexes, selective column projection. |
+| **1. Database & Queries** | N+1 queries, unindexed filters, `SELECT *`, connection pool exhaustion | Eager loading (`join`/`include`), composite indexes, selective projections, connection pool tuning & leak guards. |
 | **2. Backend & APIs** | Serial independent async calls, heavy JSON payload transforms | `Promise.all()` concurrency, streaming response bodies, lean DTO mappings. |
 | **3. Caching Layer** | Repeated identical DB queries, expensive compute cycles | Redis with TTL, cache-stampede distributed locks, probabilistic early expiration. |
 | **4. Memory & Leaks** | Unbounded arrays, retained closures, dangling subscriptions | `WeakMap`/`WeakSet`, streaming streams for large exports, explicit unmount cleanup. |
@@ -81,7 +81,8 @@ Apply the minimal structural modification addressing the bottleneck:
 - [ ] **Serialization Parity:** Cached objects rehydrate with original prototypes (`Date`, `BigInt`) without string corruption.
 - [ ] **Cache Invalidation:** Cache keys are explicitly invalidated or updated on every mutation path (create, update, delete).
 - [ ] **Stampede Protection:** Mutex locks or stale-while-revalidate applied to high-traffic cached endpoints.
-- [ ] **Retry Storm Protection:** Outbound retries use exponential backoff with randomized jitter; max retries capped $\le 3$.
+- [ ] **Connection Pool Safety:** Connections released immediately after query completion; idle timeouts and pool sizing configured to prevent starvation under burst traffic.
+- [ ] **Retry Storm Protection:** Outbound retries use exponential backoff with randomized jitter; max retries capped <= 3.
 - [ ] **Unmount Cleanup:** All frontend event listeners, timers, and WebSocket subscriptions are explicitly cleaned up.
 
 ---
@@ -90,7 +91,7 @@ Apply the minimal structural modification addressing the bottleneck:
 
 1. Re-run benchmark under identical baseline conditions.
 2. Verify that:
-   - The target metric measurably improved (e.g. latency decreased by $\ge 40\%$ or DB queries reduced from 25 to 2).
+   - The target metric measurably improved (e.g. latency decreased by >= 40% or DB queries reduced from 25 to 2).
    - All automated unit and integration tests continue to pass with zero regressions.
    - Typecheck is completely clean (`tsc --noEmit`).
 
