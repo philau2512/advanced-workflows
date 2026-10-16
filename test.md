@@ -19,6 +19,8 @@ Activates **UNIFIED TESTING & QUALITY MODE** to discover test coverage gaps, gen
 > 3. **RELATIONAL INTEGRITY & IDEMPOTENCY:** Seed scripts must maintain strict foreign-key order (parents before children) and support idempotent execution (`upsert` or `ON CONFLICT`).
 > 4. **ZERO PRODUCTION CONTAMINATION:** Mock handlers, synthetic seeders, and fixtures must be strictly isolated from production build bundles (`process.env.NODE_ENV !== 'production'`).
 > 5. **STRICTLY READ-ONLY AUDIT BY DEFAULT:** Never generate or modify test files during an audit unless `--write-tests` is explicitly provided.
+> 6. **MOCK ISOLATION & TEARDOWN GUARANTEE:** Any test modifying globals, module implementations, or using spies (`vi.spyOn`, `jest.spyOn`, MSW handlers) must register explicit cleanup (`afterEach(() => { vi.restoreAllMocks(); server.resetHandlers(); })`). Never allow mock mutations to bleed into sibling test suites.
+> 7. **DETERMINISTIC DATA & SEED INTEGRITY:** Synthetic test data and database seed scripts must use a fixed, reproducible seed (`faker.seed(1234)` or constant PRNG). Unseeded randomness is strictly forbidden.
 
 ---
 
@@ -113,6 +115,24 @@ export const handlers = [
 ];
 ```
 
+### 🛡️ Mock Isolation & Teardown Protocol:
+To prevent test suite cross-contamination, always structure MSW and spy lifecycles explicitly:
+
+```typescript
+import { setupServer } from 'msw/node';
+import { handlers } from './handlers';
+
+export const server = setupServer(...handlers);
+
+// Global test lifecycle setup:
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => {
+  server.resetHandlers();      // Reset any runtime overrides
+  vi.restoreAllMocks();        // Restore spy implementations (clearAllMocks only resets call counts!)
+});
+afterAll(() => server.close());
+```
+
 ### Mocking Best Practices:
 - **Stateful Mocking:** Use in-memory stores (`@mswjs/data` or module-scoped maps) to simulate realistic CRUD persistence across multi-step UI flows.
 - **Network Chaos Testing:** Add configurable latency (`delay(800)`), status overrides (`HttpResponse.json(..., { status: 401 })`), or network drops (`HttpResponse.error()`).
@@ -128,7 +148,7 @@ Generates typed, relational fixtures or idempotent DB seeders (Prisma, Drizzle, 
 1. **Relational Top-Down Order:** Seed parents before children (`User` -> `Organization` -> `Order` -> `OrderItem`).
 2. **Reverse Cleanup Order:** When resetting data, delete children before parents to avoid foreign-key constraint violations.
 3. **Idempotent Upserts:** Always use `upsert` or `ON CONFLICT (id) DO UPDATE/NOTHING` instead of raw `insert` to ensure scripts can be re-run safely.
-4. **Deterministic Sequences:** Use incrementing counters or seeded random generation for foreign keys and unique constraints.
+4. **Deterministic Seed Initialization:** Always initialize generator seeds with a constant integer (e.g., `faker.seed(1234)`). Fixtures must generate bit-for-bit identical records across all test runs.
 5. **Batching for High Volumes:** When generating >1000 records, batch database inserts in chunks of 500 records to prevent memory exhaustion and timeout.
 6. **Environment Guards:** Abort immediately if `process.env.NODE_ENV === 'production'`.
 
@@ -143,8 +163,8 @@ Runs targeted tests in repeated tight loops (e.g. 5–10 iterations) to expose h
    - *Fix:* Freeze clock with fake timers (`vi.useFakeTimers()`); advance explicitly via `vi.advanceTimersByTime(ms)`.
 2. **Asynchronous Polling & Arbitrary Sleep:** Using `await sleep(100)` hoping background operations finish in time.
    - *Fix:* Replace arbitrary sleep with deterministic waiting: `await waitFor(() => expect(...))` or Playwright auto-retrying locators.
-3. **Leaky Test State & Shared Fixtures:** Mutation of shared module singletons or DB rows without cleanup.
-   - *Fix:* Enforce test isolation via `beforeEach` / `afterEach` with `vi.clearAllMocks()`, `vi.resetModules()`, and transactional DB rollbacks.
+3. **Leaky Test State & Shared Fixtures:** Mutation of shared module singletons, un-restored spies, or DB rows without cleanup.
+   - *Fix:* Enforce test isolation via `beforeEach` / `afterEach` with `vi.restoreAllMocks()`, `server.resetHandlers()`, `vi.resetModules()`, and transactional DB rollbacks.
 4. **Unseeded Randomness:** Using `Math.random()` or unseeded faker libraries producing payloads that occasionally fail validation.
    - *Fix:* Seed pseudo-random generators (e.g. `faker.seed(1234)`) so failures can be replayed identically.
 
@@ -175,4 +195,6 @@ Runs targeted tests in repeated tight loops (e.g. 5–10 iterations) to expose h
 ### 3. Verification & Test Execution
 - **Command:** `npx vitest run tests/unit/discountEngine.test.ts`
 - **Result:** **All 4 tests PASSING (100% green)**
+- [x] Mock isolation verified (`afterEach` restores all spies; zero cross-suite leakage).
+- [x] Deterministic seed verified (Bit-for-bit identical fixture generation).
 ```

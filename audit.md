@@ -86,13 +86,28 @@ Activates **AUDIT & CODE HEALTH ASSESSMENT MODE** to perform rigorous, multi-dim
 | **7. Error Handling** | Swallowed errors (`catch {}`), lost context | P1 | Explicit re-throw, retain stack trace, or structured domain error. |
 | **8. State & Side Effects** | Implicit mutations, hidden cache updates | P1 | Make mutations explicit; separate pure calculations from I/O. |
 | **9. Dead Code & Comments** | Zombie code, commented-out blocks, obvious comments | P3 | Delete outright (git preserves history); keep "why" comments only. |
-| **10. Colocation & Placement** | Variables declared far from usage, scattered constants | P3 | Colocate variables near usage; extract magic constants to module top. |
+| **10. Constants & Magic Literals** | Magic numbers, un-named timeouts, scattered status strings | P2 | Centralize in typed enums, `as const` objects, or domain constants. |
 | **11. Data Transformations** | Mutating input arguments directly | P1 | Enforce immutability; centralize DTO ↔ Domain ↔ DB mappings. |
 | **12. Command-Query Separation**| Functions querying data while mutating state | P2 | Separate pure queries (no side effects) from state-mutating commands. |
 | **13. Type Safety & Nullability**| `any`, loose casts, missing return types | P1 | Use explicit interfaces, discriminators, optional chaining (`?.`), and `??`. |
 | **14. Async / Promises** | Callback hell, mixing `.then()` with `async/await` | P2 | Standardize on clean `async/await` with localized `try/catch`. |
 | **15. Testability** | Hardcoded clocks, network, or global singletons | P2 | Inject dependencies or parameterize external inputs. |
 | **16. Architecture Boundaries** | Lower layer importing higher layer, leaky transport | P1 | Enforce top-down dependency flow; decouple transport from domain. |
+
+---
+
+### 🏷️ Hardcoded Values, Magic Literals & Localization Audit Protocol
+
+Audit target codebases systematically against the 6 classes of hardcoded debt:
+
+| Category | High-Risk Pattern & Code Evidence | Severity | Remediation Pattern |
+| :--- | :--- | :---: | :--- |
+| **1. Secrets & Credentials** | JWT secrets, private keys, API keys, fallback passwords (`const secret = "my-secret-123"`) | **P1** | Move to `.env` / Secret Manager; inject via validated ConfigService. |
+| **2. URLs & Network Ports** | Hardcoded URLs/IPs (`"http://localhost:3000"`, `"https://api.domain.com/v1"`) | **P1 / P2** | Centralize in environment configs (`process.env.API_BASE_URL`) or API client builders. |
+| **3. Business Status & Roles** | Magic string literals in conditions (`if (status === 'PENDING')`, `role === 'ADMIN'`) | **P2** | Define centralized `enum OrderStatus` or `const ORDER_STATUS = { ... } as const`. |
+| **4. Storage Keys & Routes** | Raw strings in storage/nav (`localStorage.getItem("token")`, `router.push("/admin/users")`) | **P2** | Centralize in typed `STORAGE_KEYS` catalog and strongly-typed `ROUTES_MAP`. |
+| **5. Magic Numbers & Time** | Literal durations/rates (`86400000`, `0.0825`, `5000`, `retry > 3`) without semantic names | **P2 / P3** | Extract named constants (`ONE_DAY_MS = 24 * 60 * 60 * 1000`, `VAT_TAX_RATE = 0.0825`). |
+| **6. Hard Text & Error Catalogs**| User-facing UI labels, button text, or thrown error messages written directly in JSX/services | **P3** | Decouple into `i18n` translation keys or structured error message catalogs. |
 
 ---
 
@@ -125,6 +140,7 @@ Activates **AUDIT & CODE HEALTH ASSESSMENT MODE** to perform rigorous, multi-dim
 ---
 
 ### Pillar 4: Security, Dependencies & Runtime Fragility
+- **Hardcoded Secrets & Environment Fallbacks:** Audit for committed credentials, API tokens, or hardcoded staging/prod URLs.
 - **Supply Chain & Vulnerable Dependencies:** Audit dependencies for known CVEs (`npm audit`, lockfile check), unmaintained/abandoned packages (>2 years without commits), and license conflicts (GPL in proprietary codebases).
 - **Unsanitized Inputs & Injections:** Raw SQL concatenation, unescaped HTML injection, unchecked path traversal parameters.
 - **Module Top-Level Side Effects:** Executing network requests, database initialization, or reading dynamic `process.env` at module load time (breaks container lifecycles and unit tests).
@@ -165,7 +181,9 @@ Activates **AUDIT & CODE HEALTH ASSESSMENT MODE** to perform rigorous, multi-dim
 | `AUD-01` | P1 | Architecture | `src/controllers/order.ts:45` | Controller queries ORM directly bypassing OrderService | Move queries to `order.repository.ts` | Med |
 | `AUD-02` | P2 | Duplication | `src/cart.ts:60` & `src/checkout.ts:40` | Type 1 Clone: 38 lines of discount calculation duplicated | Consolidate into `pricing.service.ts` | Low |
 | `AUD-03` | P2 | Clean Code | `src/services/payment.ts:112` | 4-level nested `if/else` checks | Apply Guard Clauses & Early Returns | Low |
-| `AUD-04` | P3 | Clean Code | `src/utils/helpers.ts:15` | Generic identifier `data` used across 50 lines | Rename to `parsedUserPayload` | Low |
+| `AUD-04` | P2 | Clean Code | `src/routes/user.ts:18` | Magic status `'PENDING'` checked directly in logic | Extract to `OrderStatus` enum / `as const` | Low |
+| `AUD-05` | P3 | Clean Code | `src/components/LoginModal.tsx:42` | Hard text `'Vui lòng nhập mật khẩu'` in JSX | Move to i18n / message catalog | Low |
+| `AUD-06` | P3 | Clean Code | `src/utils/helpers.ts:15` | Generic identifier `data` used across 50 lines | Rename to `parsedUserPayload` | Low |
 
 ---
 

@@ -12,6 +12,7 @@
 - **Style & Output Requirements**:
   - Get straight to the answer and solution; be concise, easy to scan, and avoid unnecessary explanations or exposing private chain-of-thought.
   - Do not repeat the entire execution process when finishing a task. Avoid long summaries because users will usually not read them.
+  - **Báo cáo Hiện trạng Logic Ban đầu (MANDATORY khi Sửa lỗi / Thay đổi Logic)**: Luôn nêu rõ và ngắn gọn 2 vế đối chiếu: (1) **Hiện trạng / Cơ chế logic ban đầu** (nguyên nhân vì sao trước đó hệ thống xử lý như vậy, hành vi cũ) và (2) **Cơ chế sau điều chỉnh** (hành vi mới, các điểm chốt chặn đã thiết lập).
 - **Formatting & Zero-LaTeX Constraint**:
   - Use plain standard Markdown only. Accurately reference code and file paths; never invent them.
   - **ZERO TOLERANCE for LaTeX/KaTeX**: NEVER use dollar signs (`$...$` or `$$...$$`), LaTeX commands (`\text{}`, `\approx`, `\rightarrow`, `\times`, `\frac`, etc.), custom HTML tags (`<subtext>`, `<narrow>`), or non-standard math formatting anywhere in prose or explanations.
@@ -23,8 +24,12 @@
   - Dollar signs (`$`) are ONLY permitted for currency symbols (`$100`) or literal code variables/terminal commands (e.g. `$VAR`, `echo $PATH`).
   - Use clickable `file://` links only when exact paths are known. Never invent paths or line numbers.
 
-## 2. Code Change Principles & Implementation Discipline
+## 2. Code Change Principles & Scope Discipline
 
+- **Scope Discipline & Anti-Overengineering (Bắt Buộc)**:
+  - **Nguyên tắc 1-1**: Khi có file Mock HTML hoặc File yêu cầu nghiệp vụ cụ thể, CHỈ chuyển đổi chính xác những gì có trong tài liệu vào codebase.
+  - **CẤM tự sáng tác tính năng**: Tuyệt đối KHÔNG tự thêm trang quản trị mới, bảng cấu hình CRUD phụ, hay liên kết chéo các module khác trừ khi user yêu cầu rõ ràng từng chữ.
+  - **Tối giản (Minimal Scope)**: Ưu tiên giải pháp gọn nhất, ít file nhất. Không tự vẽ thêm các tầng trừu tượng (abstraction layers) cho tương lai.
 - **KISS & YAGNI**: Implement only what is directly required by the request. Do not introduce speculative generalizations, unnecessary abstraction layers, wrapper helpers, or design patterns for hypothetical future needs.
 - **Scope & Minimal Diff**: Only change what is required. Prefer the smallest correct patch that satisfies requirements; do not introduce unnecessary refactors, cleanup, abstractions, or dependencies. Preserve existing architecture, API contracts, and conventions unless the task explicitly requires changing them.
 - **No unsolicited refactoring**: Do not clean up, rename, or reformat surrounding unrelated code. Solve the problem directly and locally before considering multi-module structural changes.
@@ -34,7 +39,11 @@
 
 ## 3. Tool, Terminal & Editing Constraints
 
-- **File Editing**: ALWAYS use native file-editing tools to modify source code. Do NOT use shell commands or redirection (`echo >`, `cat <<EOF`) to patch source files.
+- **Batch & Parallel Tool Calling Discipline (BẮT BUỘC)**:
+  - Khi một thao tác liên quan đến từ 2 file trở lên hoặc có nhiều hành động độc lập (sửa file `StrReplace`/`Write`, đọc file `Read`/`ReadLints`, xóa file `Delete`, tìm kiếm `Glob`/`Grep`), **BẮT BUỘC PHẢI PHÁT TOÀN BỘ TOOL CALLS ĐỒNG THỜI (PARALLEL/BATCH) TRONG CÙNG 1 TURN RESPONSE**.
+  - **CẤM TUYỆT ĐỐI thói quen chạy tuần tự (Sequential Trickle)**: Sửa file A -> chờ kết quả -> sửa file B ở turn sau khi các file đích đã biết trước.
+  - **Dọn dẹp & Sao chép nhanh (Fast Shell)**: Khi xóa/chuyển nhiều file (>5 file) hoặc thư mục, ưu tiên dùng 1 lệnh terminal nhanh (`rm -f file1 file2...`, `rm -rf dir`, `cp -r`) thay vì xóa tuần tự từng file qua tool call đơn lẻ.
+  - **Ngoại lệ tuần tự duy nhất**: Chỉ được chạy tuần tự khi bước B phụ thuộc trực tiếp 100% vào dữ liệu/kết quả runtime trả về của bước A (ví dụ: cần đọc log lỗi test runner trước mới biết file nào lỗi để sửa). Khi các file đích đã được xác định trước, **LUÔN LUÔN batch song song trong 1 turn**.
 - **Tool Reality**: Use only tools that actually exist in the environment; never invent tools.
 - **FastContext**: Use when code discovery or broader repository context is needed; skip it when the target file/symbol is already known. If `-32602` occurs, fix the arguments and retry up to 2 times.
 - **Cross-platform command safety & Quoting**:
@@ -43,21 +52,26 @@
   - Never assume bash-only syntax (e.g., HEREDOC `<<EOF`) on Windows/PowerShell environments.
 - **Non-interactive execution**:
   - Never run interactive Git commands like `git rebase -i` or `git add -i`.
-  - For long-running commands, use appropriate background timeout (`block_until_ms: 0`) and inspect output.
-- **CLI Denylist (Strictly Prohibited)**: NEVER execute destructive git commands in terminal: `git reset`, `git clean`, `git stash drop`, `git commit --amend`, `git push --force`. Uncommitted experimental changes can be reverted via `git restore <file>` or `git checkout -- <file>` ONLY when the working tree is uncommitted and explicitly requested/confirmed by the user.
-- **Safe Revert Protocol**: For partial rollbacks, prefer IDE native tools to restore prior code. Full rollback of uncommitted scratch/experimental changes may use `git restore <file>` with explicit user confirmation. NEVER use destructive commands like `git reset --hard` or `git clean -fd`.
+- **CLI Denylist (Strictly Prohibited)**: NEVER execute destructive or revert git commands in terminal: `git checkout <file>`, `git restore`, `git reset`, `git clean`, `git stash drop`, `git commit --amend`, `git push --force`.
+- **Safe Revert Protocol**: When the user requests canceling or reverting experimental changes. NEVER rely on Git CLI to undo changes.
 - **Git & PR workflow**:
   - Only commit or create pull requests when explicitly requested by the user.
   - For multi-line commit messages: Pass multiple `-m` flags directly (e.g., `git commit -m "type: summary" -m "- detail 1" -m "- detail 2"`). NEVER create temporary files (`.tmp`, `commit.txt`) inside the project workspace/git repository to prevent polluting git index.
+  - **File & Directory Management (Permitted in Shell)**:
+   - Permitted to use fast terminal commands (`cp`, `cp -r`, `mv`, `mkdir -p`) for:
+     - Creating backup files (e.g., `cp file.tsx file.tsx.bak`).
+     - Duplicating templates or entire directories.
 
-## 4. Validation & Result Reporting
+## 4. Validation & Fast Development Discipline
 
-- **Targeted Validation**: Only run tests, lint, or type-checks directly relevant to the changed code. When modifying shared/contract types, interfaces, or cross-cutting core utilities, running a project-wide type-check (e.g. `tsc --noEmit`, `npm run type-check`) or targeted build is permitted to prevent ripple breakages. **NEVER** run the full unit/e2e test suite unless explicitly requested.
-- **Honesty**: Never claim `passed` unless the validation was actually run.
-- **Flexible Reporting**: When completing a task, report concisely:
-  1. What was changed and where.
-  2. The validation commands actually run, if any.
-  3. Any next-step suggestion, only when genuinely useful and directly relevant to the task.
+### Strict Targeted Validation (BẮT BUỘC)
+
+- Chỉ validate đúng layer, module và file bị ảnh hưởng trực tiếp bởi thay đổi.
+- **FE-only changes:** Tuyệt đối không chạy bất kỳ lệnh test, lint, build hoặc type-check nào của BE và ngược lại.
+- Chỉ chạy test trực tiếp liên quan đến code vừa sửa. Nếu không có test phù hợp (đặc biệt với UI/CSS), bỏ qua validation.
+- CẤM chạy test suite toàn project, lệnh global hoặc combo `lint + tsc + test + build` nếu không được yêu cầu rõ ràng.
+- Không chạy lại validation đã thành công nếu không có thay đổi ảnh hưởng trực tiếp.
+- Báo cáo trung thực những lệnh thực tế đã chạy. Không chạy test chỉ để có nội dung báo cáo.
 
 ## 5. Subagent Delegation Policy
 
@@ -100,7 +114,12 @@ Use a direct-or-parallel model with proactive delegation. The primary agent rema
 
 3. **Parent Integration Verification & Response Synthesis**:
    - **Parent Integration Verification Gate**: Applicable ONLY when modifying subagents were spawned. Never accept subagent code modifications blindly. Inspect combined changes (`git diff`) and run only targeted tests for touched modules. Do NOT run broad repository-wide builds or full test suites unless explicitly requested or when multi-module breaking changes require it.
-   - **Handling BLOCKED or PARTIAL Outcomes**: If a subagent reports `BLOCKED` or `PARTIAL`, analyze the reported gap/blocker. Decide whether to supply missing context and `resume` the worker, redirect the approach, or handle the blocked step directly in the primary session.
+   - **Consuming Subagent Review Reports**:
+     * **READY FOR MERGE**: The diff is verified clean and meets quality criteria. Conclude task and summarize results for the user.
+     * **BLOCKED or HAS WARNINGS**: Systematically address in-scope defects using the subagent's `Actionable Checklist` (Section 4) item-by-item. Verify fixes directly against the reported `Trigger Scenario`. If a subagent task encountered an environmental blocker, supply missing context via `resume` or resolve it directly.
+     * **Scope Discipline for Pre-existing Observations (Section 3)**: STRICTLY NEVER modify or refactor existing code based on Section 3 in the current task. Treat them exclusively as backlog suggestions and preserve the minimal diff boundary.
    - **Synthesis & High-Signal Reporting**: Synthesize multiple worker findings into a coherent, structured summary. Highlight concrete outcomes, modified file locations, and verification evidence without repeating raw verbose tool logs.
+
+- **When exploring new features, business workflows, or abstract concepts:** Prioritize using `fast_context_search`, as it offers high semantic accuracy, enabling you to locate the correct file and line range in a single call.
 
 Every worker must have a clear scope, expected output, and integration boundary. Never allow multiple workers to modify the same file concurrently. The primary agent retains architectural decisions, integration, validation conclusions, and the final judgment.
